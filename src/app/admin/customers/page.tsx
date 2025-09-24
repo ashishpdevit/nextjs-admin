@@ -40,16 +40,17 @@ export default function CustomersPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selected, setSelected] = useState<number[]>([])
+  const [customers, setCustomers] = useState(customersData)
 
   const filtered = useMemo(() => {
-    return customersData.filter((c) => {
+    return customers.filter((c) => {
       const matchesQ = q ? c.name.toLowerCase().includes(q.toLowerCase()) || 
                               c.email.toLowerCase().includes(q.toLowerCase()) ||
                               c.company.toLowerCase().includes(q.toLowerCase()) : true
       const matchesStatus = status === "all" ? true : c.status === status
       return matchesQ && matchesStatus
     })
-  }, [q, status])
+  }, [customers, q, status])
 
   const sorted = useMemo(() => {
     const list = [...filtered]
@@ -88,7 +89,7 @@ export default function CustomersPage() {
   }
 
   const handleDeleteCustomer = async (id: number) => {
-    const customer = customersData.find(c => c.id === id)
+    const customer = customers.find(c => c.id === id)
     const ok = await confirm({ 
       title: "Delete Customer", 
       description: `Are you sure you want to delete ${customer?.name}? This action cannot be undone.`, 
@@ -96,8 +97,8 @@ export default function CustomersPage() {
       variant: "destructive" 
     })
     if (ok) { 
-      // In a real app, this would make an API call
-      console.log("Deleting customer:", id)
+      // Remove customer from state
+      setCustomers(prev => prev.filter(c => c.id !== id))
       toast.success("Customer deleted successfully")
     }
   }

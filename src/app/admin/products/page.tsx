@@ -16,6 +16,7 @@ import PageHeader from "@/components/admin/page-header"
 import { LazyTableCard } from "@/components/LazyLoading"
 import CreateProductModal, { CreateProductPayload } from "@/components/modules/products/CreateProductModal"
 import EditProductModal from "@/components/modules/products/EditProductModal"
+import ProductViewModal from "@/components/modules/products/ProductViewModal"
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
 
@@ -32,15 +33,18 @@ export default function ProductsPage() {
   const [selected, setSelected] = useState<number[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any | null>(null)
+  const [viewingProduct, setViewingProduct] = useState<any | null>(null)
+  const [products, setProducts] = useState(productsData)
 
   const filtered = useMemo(() => {
-    return productsData.filter((p) => {
+    return products.filter((p) => {
       const matchesQ = q ? p.name.toLowerCase().includes(q.toLowerCase()) : true
       const matchesStatus = status === "all" ? true : p.status === status
       return matchesQ && matchesStatus
     })
-  }, [q, status])
+  }, [products, q, status])
 
   const sorted = useMemo(() => {
     const list = [...filtered]
@@ -67,10 +71,41 @@ export default function ProductsPage() {
   }
 
   const handleCreateProduct = (productData: CreateProductPayload) => {
-    // In a real app, this would make an API call
-    console.log("Creating product:", productData)
-    // For demo, just close the modal
+    // Generate new ID
+    const newId = Math.max(...products.map(p => p.id)) + 1
+    
+    // Create new product object
+    const newProduct = {
+      id: newId,
+      name: productData.name,
+      price: productData.price,
+      inventory: productData.inventory,
+      status: productData.status,
+      category: productData.category,
+      sku: productData.sku,
+      description: productData.description,
+      image: productData.image || "",
+      brand: "",
+      barcode: "",
+      featured: false,
+      images: [],
+      tags: [],
+      variants: []
+    }
+    
+    // Add to products state
+    setProducts(prev => [...prev, newProduct])
+    
+    // Show success message
+    toast.success("Product created successfully")
+    
+    // Close modal
     setShowCreateModal(false)
+  }
+
+  const handleViewProduct = (product: any) => {
+    setViewingProduct(product)
+    setShowViewModal(true)
   }
 
   const handleEditProduct = (product: any) => {
@@ -79,14 +114,21 @@ export default function ProductsPage() {
   }
 
   const handleUpdateProduct = (updatedProduct: any) => {
-    // In a real app, this would make an API call
-    console.log("Updating product:", updatedProduct)
+    // Update product in state
+    setProducts(prev => 
+      prev.map(p => p.id === updatedProduct.id ? updatedProduct : p)
+    )
+    
+    // Show success message
+    toast.success("Product updated successfully")
+    
+    // Close modal
     setShowEditModal(false)
     setEditingProduct(null)
   }
 
   const handleDeleteProduct = async (id: number) => {
-    const product = productsData.find(p => p.id === id)
+    const product = products.find(p => p.id === id)
     const ok = await confirm({ 
       title: "Delete Product", 
       description: `Are you sure you want to delete ${product?.name}? This action cannot be undone.`, 
@@ -94,8 +136,8 @@ export default function ProductsPage() {
       variant: "destructive" 
     })
     if (ok) { 
-      // In a real app, this would make an API call
-      console.log("Deleting product:", id)
+      // Remove product from state
+      setProducts(prev => prev.filter(p => p.id !== id))
       toast.success("Product deleted successfully")
     }
   }
@@ -143,7 +185,7 @@ export default function ProductsPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  const rows = productsData.filter((p) => selected.includes(p.id))
+                  const rows = products.filter((p) => selected.includes(p.id))
                   const header = ["id", "name", "price", "inventory", "status"]
                   const csv = [header.join(","), ...rows.map((r) => header.map((h) => (r as any)[h]).join(","))].join("\n")
                   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
@@ -212,7 +254,7 @@ export default function ProductsPage() {
                   <Badge variant={p.status === "Active" ? "default" : "secondary"}>{p.status}</Badge>
                 </TableCell>
                 <TableCell className="space-x-1">
-                  <Button variant="outline" size="sm" title="View" onClick={() => alert(p.name)}>
+                  <Button variant="outline" size="sm" title="View" onClick={() => handleViewProduct(p)}>
                     <Eye size={14} />
                   </Button>
                   <Button variant="outline" size="sm" title="Edit" onClick={() => handleEditProduct(p)}>
@@ -242,6 +284,14 @@ export default function ProductsPage() {
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
         onSave={handleCreateProduct}
+      />
+
+      <ProductViewModal
+        open={showViewModal}
+        onOpenChange={setShowViewModal}
+        product={viewingProduct}
+        onEdit={handleEditProduct}
+        onDelete={handleDeleteProduct}
       />
 
       <EditProductModal

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { User, ArrowLeft, Edit, Trash, Mail, Phone, Building, Globe, Clock } from "lucide-react"
 import PageHeader from "@/components/admin/page-header"
-import customersData from "@/data/customers.json"
+import customersData from "@/mocks/customers.json"
 
 interface Customer {
   id: number

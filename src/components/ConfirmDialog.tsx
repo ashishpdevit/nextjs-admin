@@ -77,7 +77,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             </Button>
             <Button
               onClick={onConfirm}
-              className={options?.variant === "destructive" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+              className={options?.variant === "destructive" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 text-white" : "text-white"}
             >
               {options?.confirmText || "Confirm"}
             </Button>

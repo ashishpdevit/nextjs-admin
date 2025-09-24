@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { X, Upload, User } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, RightDialogContent, RightDialogHeader, RightDialogTitle } from "@/components/ui/right-dialog"
+import { DialogTitle } from "@/components/ui/dialog"
+import { PRODUCT_MODAL_CONFIG, PRODUCT_MODAL_CLASSES } from "@/lib/product-modal-config"
 
 interface CreateProductModalProps {
   open: boolean
@@ -36,18 +38,18 @@ export default function CreateProductModal({ open, onOpenChange, onSave }: Creat
     sku: "",
     image: ""
   })
-  const [errors, setErrors] = useState<Partial<CreateProductPayload>>({})
+  const [errors, setErrors] = useState<any>({})
 
   const handleInputChange = (field: keyof CreateProductPayload, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value as any }))
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
+      setErrors((prev: any) => ({ ...prev, [field]: undefined }))
     }
   }
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<CreateProductPayload> = {}
+    const newErrors: any = {}
 
     if (!formData.name.trim()) newErrors.name = "Product name is required"
     if (!formData.description.trim()) newErrors.description = "Description is required"
@@ -96,14 +98,18 @@ export default function CreateProductModal({ open, onOpenChange, onSave }: Creat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <RightDialogContent 
+        config={PRODUCT_MODAL_CONFIG}
+        className={PRODUCT_MODAL_CLASSES.container}
+      >
+        <RightDialogHeader className={PRODUCT_MODAL_CLASSES.header}>
           <DialogTitle className="text-xl font-semibold">New Product</DialogTitle>
-        </DialogHeader>
+        </RightDialogHeader>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={PRODUCT_MODAL_CLASSES.content}>
+          <div className={PRODUCT_MODAL_CLASSES.grid}>
           {/* Left Section - Product Image */}
-          <div className="space-y-4">
+          <div className={PRODUCT_MODAL_CLASSES.column}>
             <Label className="text-sm font-medium">Product Image</Label>
             <Card className="border-2 border-dashed border-muted-foreground/25">
               <CardContent className="flex flex-col items-center justify-center p-8">
@@ -130,7 +136,7 @@ export default function CreateProductModal({ open, onOpenChange, onSave }: Creat
           </div>
 
           {/* Right Section - Form Fields */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className={PRODUCT_MODAL_CLASSES.column}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium">
@@ -247,18 +253,19 @@ export default function CreateProductModal({ open, onOpenChange, onSave }: Creat
               </div>
             </div>
           </div>
+          </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-3 pt-6 border-t">
+        <div className={`flex justify-end gap-3 ${PRODUCT_MODAL_CLASSES.footer}`}>
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleSave} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             Create Product
           </Button>
         </div>
-      </DialogContent>
+      </RightDialogContent>
     </Dialog>
   )
 }
