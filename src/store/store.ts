@@ -1,0 +1,25 @@
+"use client"
+import { configureStore } from "@reduxjs/toolkit"
+import adminReducer from "@/store/admin"
+import customersReducer from "@/store/customers"
+import appSettingsReducer from "@/store/appSettings"
+import appMenuLinksReducer from "@/store/appMenuLinks"
+import contactReducer from "@/store/contact"
+import faqsReducer from "@/store/faqs"
+
+export const makeStore = () =>
+  configureStore({
+    reducer: {
+      admins: adminReducer,
+      customers: customersReducer,
+      appSettings: appSettingsReducer,
+      appMenuLinks: appMenuLinksReducer,
+      contact: contactReducer,
+      faqs: faqsReducer,
+    },
+    devTools: process.env.NODE_ENV !== "production",
+  })
+
+export type AppStore = ReturnType<typeof makeStore>
+export type RootState = ReturnType<AppStore["getState"]>
+export type AppDispatch = AppStore["dispatch"]

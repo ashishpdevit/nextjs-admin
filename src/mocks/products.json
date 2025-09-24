@@ -1,0 +1,7 @@
+[
+  {"id": 1001, "name": "Wireless Headphones", "price": 129.99, "inventory": 42, "status": "Active"},
+  {"id": 1002, "name": "Smart Watch", "price": 199.0, "inventory": 17, "status": "Active"},
+  {"id": 1003, "name": "USB-C Charger", "price": 29.99, "inventory": 0, "status": "Hidden"},
+  {"id": 1004, "name": "Laptop Sleeve", "price": 39.5, "inventory": 76, "status": "Active"}
+]
+
