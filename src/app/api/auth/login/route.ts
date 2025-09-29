@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 
 // Development credentials for demo
 const DEV_CREDENTIALS = {
@@ -23,7 +23,9 @@ export async function POST(request: NextRequest) {
       const user = {
         email: email,
         name: "Admin User",
-        role: "admin"
+        roleId: "super-admin",
+        role: "Super Admin",
+        permissions: ["*"]
       }
 
       return NextResponse.json({

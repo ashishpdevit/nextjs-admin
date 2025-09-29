@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   LayoutDashboard,
   Users as UsersIcon,
@@ -10,11 +10,17 @@ import {
   ShoppingCart,
   Settings as SettingsIcon,
   Link2,
+  Boxes,
+  Key,
+  ShieldPlus,
+  UserPlus,
   MessageCircle,
   HelpCircle,
   ChevronDown,
   UserCheck,
+  ShieldCheck,
 } from "lucide-react"
+import { useRBAC } from "@/hooks/use-rbac"
 
 type NavItem = {
   label: string
@@ -23,7 +29,7 @@ type NavItem = {
   children?: NavItem[]
 }
 
-const nav: NavItem[] = [
+const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Admins", icon: UsersIcon },
   { href: "/admin/customers", label: "Customers", icon: UserCheck },
@@ -40,16 +46,37 @@ const nav: NavItem[] = [
   },
   { href: "/admin/contact-us", label: "Contact Us", icon: MessageCircle },
   { href: "/admin/faqs", label: "FAQs", icon: HelpCircle },
+  { href: "/admin/rbac", label: "Role Manager", icon: ShieldCheck },
 ]
+
+function filterNavItems(items: NavItem[], canAccess: (href: string) => boolean, ready: boolean): NavItem[] {
+  if (!ready) return items
+  return items
+    .map((item) => {
+      if (!item.href) return item
+      if (item.children?.length) {
+        const visibleChildren = item.children.filter((child) => !child.href || canAccess(child.href))
+        if (!visibleChildren.length && !canAccess(item.href)) {
+          return null
+        }
+        return { ...item, children: visibleChildren }
+      }
+      return canAccess(item.href) ? item : null
+    })
+    .filter((item): item is NavItem => item !== null)
+}
 
 export default function Sidebar() {
   const pathname = usePathname()
   const [brand, setBrand] = useState("Company")
   const [open, setOpen] = useState<Record<string, boolean>>({})
+  const { canAccessRoute, loading, roleId } = useRBAC()
+  const nav = useMemo(() => filterNavItems(NAV_ITEMS, canAccessRoute, !loading && !!roleId), [canAccessRoute, loading, roleId])
+
   useEffect(() => {
     const load = () => {
-      const b = localStorage.getItem("brand:name")
-      if (b) setBrand(b)
+      const stored = localStorage.getItem("brand:name")
+      if (stored) setBrand(stored)
     }
     load()
     window.addEventListener("storage", load)
@@ -57,13 +84,14 @@ export default function Sidebar() {
   }, [])
 
   useEffect(() => {
-    // expand parent groups that match current route
     const next: Record<string, boolean> = {}
-    nav.forEach((n) => {
-      if (n.children?.some((c) => (c.href && pathname.startsWith(c.href)))) next[n.label] = true
+    nav.forEach((item) => {
+      if (item.children?.some((child) => child.href && pathname.startsWith(child.href))) {
+        next[item.label] = true
+      }
     })
     setOpen((prev) => ({ ...prev, ...next }))
-  }, [pathname])
+  }, [pathname, nav])
 
   return (
     <aside className="hidden sticky top-0 h-screen border-r bg-sidebar md:block md:w-60 lg:w-64">
@@ -86,7 +114,7 @@ export default function Sidebar() {
                     "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
                     active
                       ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                      : "hover:bg-muted text-sidebar-foreground"
+                      : "hover:bg-muted text-sidebar-foreground",
                   )}
                 >
                   {Icon && <Icon className="h-4 w-4" />}
@@ -102,9 +130,9 @@ export default function Sidebar() {
                 <button
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted",
-                    activeParent && "text-sidebar-foreground"
+                    activeParent && "text-sidebar-foreground",
                   )}
-                  onClick={() => setOpen((p) => ({ ...p, [item.label]: !p[item.label] }))}
+                  onClick={() => setOpen((prev) => ({ ...prev, [item.label]: !prev[item.label] }))}
                 >
                   <span className="flex items-center gap-2">
                     {Icon && <Icon className="h-4 w-4" />}
@@ -118,24 +146,24 @@ export default function Sidebar() {
                   </span>
                   <ChevronDown className={cn("h-4 w-4 transition-transform", opened ? "rotate-180" : "rotate-0")} />
                 </button>
-                {opened && (
+                {opened && item.children && (
                   <div className="mt-0.5 space-y-0.5 pl-7">
-                    {item.children!.map((c) => {
-                      const CIcon = c.icon
-                      const activeChild = pathname === c.href
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon
+                      const activeChild = pathname === child.href
                       return (
                         <Link
-                          key={c.href}
-                          href={c.href || "#"}
+                          key={child.href || child.label}
+                          href={child.href || "#"}
                           className={cn(
                             "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
                             activeChild
                               ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                              : "hover:bg-muted text-sidebar-foreground"
+                              : "hover:bg-muted text-sidebar-foreground",
                           )}
                         >
-                          {CIcon && <CIcon className="h-4 w-4" />}
-                          <span>{c.label}</span>
+                          {ChildIcon && <ChildIcon className="h-4 w-4" />}
+                          <span>{child.label}</span>
                         </Link>
                       )
                     })}
@@ -149,4 +177,3 @@ export default function Sidebar() {
     </aside>
   )
 }
-

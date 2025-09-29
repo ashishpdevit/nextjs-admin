@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useMemo, useState } from "react"
 import ordersData from "@/mocks/orders.json"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { FiltersBar } from "@/components/admin/filters"
+import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { exportCsv } from "@/lib/utils"
 import { Eye } from "lucide-react"
 import PageHeader from "@/components/admin/page-header"
@@ -67,11 +68,13 @@ export default function OrdersPage() {
           <p className="mt-1 text-xs text-muted-foreground">{total} orders</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => {
-            const rows = sorted
-            const cols = ["id", "customer", "total", "date", "status"]
-            exportCsv("orders.csv", rows, cols)
-          }}>Export</Button>
+          <PermissionGate allow="orders:export">
+            <Button variant="outline" onClick={() => {
+              const rows = sorted
+              const cols = ["id", "customer", "total", "date", "status"]
+              exportCsv("orders.csv", rows, cols)
+            }}>Export</Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -100,22 +103,24 @@ export default function OrdersPage() {
           <div className="flex items-center justify-between rounded-md border bg-muted/50 px-3 py-2 text-sm">
             <div>{selected.length} selected</div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const rows = ordersData.filter((o) => selected.includes(o.id))
-                  const header = ["id", "customer", "total", "date", "status"]
-                  const csv = [header.join(","), ...rows.map((r) => header.map((h) => (r as any)[h]).join(","))].join("\n")
-                  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
-                  const a = document.createElement("a")
-                  a.href = url
-                  a.download = "orders.csv"
-                  a.click()
-                  URL.revokeObjectURL(url)
-                }}
-              >
-                Export CSV
-              </Button>
+              <PermissionGate allow="orders:export">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const rows = ordersData.filter((o) => selected.includes(o.id))
+                    const header = ["id", "customer", "total", "date", "status"]
+                    const csv = [header.join(","), ...rows.map((r) => header.map((h) => (r as any)[h]).join(","))].join("\n")
+                    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
+                    const a = document.createElement("a")
+                    a.href = url
+                    a.download = "orders.csv"
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
+                >
+                  Export CSV
+                </Button>
+              </PermissionGate>
               <Button variant="outline" onClick={() => setSelected([])}>Clear</Button>
             </div>
           </div>
@@ -147,7 +152,7 @@ export default function OrdersPage() {
                   }}
                   className={"cursor-pointer select-none" + (key === "total" ? " text-right" : "")}
                 >
-                  {label} {sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                  {label} {sortKey === key ? (sortDir === "asc" ? "â–²" : "â–¼") : ""}
                 </TableHead>
               ))}
             </TableRow>
@@ -195,3 +200,4 @@ export default function OrdersPage() {
     </div>
   )
 }
+

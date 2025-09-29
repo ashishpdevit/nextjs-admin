@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { configureStore } from "@reduxjs/toolkit"
 import adminReducer from "@/store/admin"
 import customersReducer from "@/store/customers"
@@ -6,6 +6,7 @@ import appSettingsReducer from "@/store/appSettings"
 import appMenuLinksReducer from "@/store/appMenuLinks"
 import contactReducer from "@/store/contact"
 import faqsReducer from "@/store/faqs"
+import rbacReducer from "@/store/rbac"
 
 export const makeStore = () =>
   configureStore({
@@ -16,6 +17,7 @@ export const makeStore = () =>
       appMenuLinks: appMenuLinksReducer,
       contact: contactReducer,
       faqs: faqsReducer,
+      rbac: rbacReducer,
     },
     devTools: process.env.NODE_ENV !== "production",
   })
