@@ -1,6 +1,6 @@
-﻿"use client"
+"use client"
 import { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
@@ -10,6 +10,7 @@ import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { useRBAC } from "@/hooks/use-rbac"
 import type { Permission } from "@/features/rbac/rbacTypes"
 import { toast } from "sonner"
+import { Pencil, Trash2 } from "lucide-react"
 
 type PermissionFormState = {
   id?: string
@@ -107,76 +108,87 @@ export function PermissionManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-lg font-semibold leading-none tracking-tight">Permissions</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create granular permissions that can be assigned to roles.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={refresh} disabled={loading}>
-            Refresh
-          </Button>
-          <PermissionGate allow="rbac:manage">
-            <Button onClick={() => openForm()}>New permission</Button>
-          </PermissionGate>
-        </div>
-      </div>
+      <header className="space-y-1">
+        <h1 className="text-lg font-semibold leading-none tracking-tight">Permissions</h1>
+        <p className="text-sm text-muted-foreground">
+          Create granular permissions that can be assigned to roles.
+        </p>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Permission catalog</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Resource</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-36 text-right">Actions</TableHead>
+      <TableCard
+        title="Permission catalog"
+        right={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={refresh} disabled={loading}>
+              Refresh
+            </Button>
+            <PermissionGate allow="rbac:manage">
+              <Button onClick={() => openForm()}>New permission</Button>
+            </PermissionGate>
+          </div>
+        }
+      >
+        <Table className="admin-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Resource</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="w-36 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {permissionsCatalog.map((permission) => (
+              <TableRow key={permission.id}>
+                <TableCell className="font-medium">{permission.name}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{permission.resource}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{permission.action}</Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {permission.description || "-"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    <PermissionGate allow="rbac:manage">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openForm(permission)}
+                        title="Edit permission"
+                        aria-label={`Edit ${permission.name}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate allow="rbac:manage">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(permission)}
+                        title="Delete permission"
+                        aria-label={`Delete ${permission.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {permissionsCatalog.map((permission) => (
-                <TableRow key={permission.id}>
-                  <TableCell className="font-medium">{permission.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{permission.resource}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{permission.action}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {permission.description || "—"}
-                  </TableCell>
-                  <TableCell className="space-x-2 text-right">
-                    <PermissionGate allow="rbac:manage">
-                      <Button variant="outline" size="sm" onClick={() => openForm(permission)}>
-                        Edit
-                      </Button>
-                    </PermissionGate>
-                    <PermissionGate allow="rbac:manage">
-                      <Button variant="outline" size="sm" onClick={() => handleDelete(permission)}>
-                        Delete
-                      </Button>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!permissionsCatalog.length && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                    No permissions defined yet.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ))}
+            {!permissionsCatalog.length && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  No permissions defined yet.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableCard>
 
       {form && (
         <div

@@ -1,6 +1,6 @@
-﻿"use client"
+"use client"
 import { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,6 +10,7 @@ import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { useRBAC } from "@/hooks/use-rbac"
 import type { Permission, Role } from "@/features/rbac/rbacTypes"
 import { toast } from "sonner"
+import { Pencil, Trash2 } from "lucide-react"
 
 type RoleFormState = {
   id?: string
@@ -128,8 +129,9 @@ export function RoleManager() {
   }
 
   const handleDelete = async (role: Role) => {
-    if (!canManage || role.isSystem) return
-    const confirmed = window.confirm(`Delete role "${role.name}"? This action cannot be undone.`)
+    if (!canManage) return
+    if (role.isSystem) return
+    const confirmed = window.confirm(`Delete role "${role.name}"?`)
     if (!confirmed) return
     try {
       await removeRole(role.id)
@@ -149,66 +151,79 @@ export function RoleManager() {
     }
     const permission = permissionsById.get(permissionId)
     if (!permission) {
-      return <Badge key={permissionId}>{permissionId}</Badge>
+      return (
+        <Badge key={permissionId} variant="outline">
+          {permissionId}
+        </Badge>
+      )
     }
-    return <Badge key={permissionId}>{permission.name}</Badge>
+    return (
+      <Badge key={permission.id} variant="outline">
+        {permission.name}
+      </Badge>
+    )
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-lg font-semibold leading-none tracking-tight">Roles</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Bundle permissions into reusable roles for assignment.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={refresh} disabled={loading}>
-            Refresh
-          </Button>
-          <PermissionGate allow="rbac:manage">
-            <Button onClick={() => openForm()}>New role</Button>
-          </PermissionGate>
-        </div>
-      </div>
+      <header className="space-y-1">
+        <h1 className="text-lg font-semibold leading-none tracking-tight">Roles</h1>
+        <p className="text-sm text-muted-foreground">
+          Group permissions into reusable access bundles.
+        </p>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Role list</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Permissions</TableHead>
-                <TableHead className="w-32">Type</TableHead>
-                <TableHead className="w-36 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {roles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell>{role.description || "—"}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {role.permissions.includes("*")
-                        ? renderPermissionBadge("*")
-                        : role.permissions.map(renderPermissionBadge)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={role.isSystem ? "secondary" : "outline"}>
-                      {role.isSystem ? "System" : "Custom"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="space-x-2 text-right">
+      <TableCard
+        title="Role catalog"
+        right={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={refresh} disabled={loading}>
+              Refresh
+            </Button>
+            <PermissionGate allow="rbac:manage">
+              <Button onClick={() => openForm()}>New role</Button>
+            </PermissionGate>
+          </div>
+        }
+      >
+        <Table className="admin-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Permissions</TableHead>
+              <TableHead className="w-32">Type</TableHead>
+              <TableHead className="w-36 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {roles.map((role) => (
+              <TableRow key={role.id}>
+                <TableCell className="font-medium">{role.name}</TableCell>
+                <TableCell>{role.description || "-"}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {role.permissions.includes("*")
+                      ? renderPermissionBadge("*")
+                      : role.permissions.map(renderPermissionBadge)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={role.isSystem ? "secondary" : "outline"}>
+                    {role.isSystem ? "System" : "Custom"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
                     <PermissionGate allow="rbac:manage">
-                      <Button variant="outline" size="sm" onClick={() => openForm(role)}>
-                        Edit
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openForm(role)}
+                        title="Edit role"
+                        aria-label={`Edit ${role.name}`}
+                      >
+                        <Pencil className="h-4 w-4" />
                       </Button>
                     </PermissionGate>
                     <PermissionGate allow="rbac:manage">
@@ -217,24 +232,26 @@ export function RoleManager() {
                         size="sm"
                         disabled={role.isSystem}
                         onClick={() => handleDelete(role)}
+                        title={role.isSystem ? "System roles cannot be deleted" : "Delete role"}
+                        aria-label={role.isSystem ? `${role.name} is system role` : `Delete ${role.name}`}
                       >
-                        Delete
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!roles.length && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                    No roles defined yet.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!roles.length && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  No roles defined yet.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableCard>
 
       {form && (
         <div
