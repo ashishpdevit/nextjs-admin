@@ -24,7 +24,7 @@ export async function fetchCustomersApi(): Promise<Customer[]> {
       createdAt: c.createdAt || new Date().toISOString(),
     }))
   }
-  const res = await axios.get<Customer[]>("/customers")
+  const res = await axios.get<Customer[]>("/app/customers")
   return res.data
 }
 
@@ -39,7 +39,7 @@ export async function createCustomerApi(payload: Omit<Customer, "id" | "createdA
     }
     return created
   }
-  const res = await axios.post<Customer>("/customers", payload)
+  const res = await axios.post<Customer>("/app/customers", payload)
   return res.data
 }
 
@@ -47,7 +47,7 @@ export async function updateCustomerApi(payload: Customer): Promise<Customer> {
   if (USE_MOCK) {
     return payload
   }
-  const res = await axios.put<Customer>(`/customers/${payload.id}`, payload)
+  const res = await axios.put<Customer>(`/app/customers/${payload.id}`, payload)
   return res.data
 }
 
@@ -55,6 +55,7 @@ export async function deleteCustomerApi(id: number): Promise<number> {
   if (USE_MOCK) {
     return id
   }
-  await axios.delete(`/customers/${id}`)
+  await axios.delete(`/app/customers/${id}`)
   return id
 }
+

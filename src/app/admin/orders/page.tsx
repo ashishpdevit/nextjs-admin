@@ -1,6 +1,5 @@
 ﻿"use client"
-import { useMemo, useState } from "react"
-import ordersData from "@/mocks/orders.json"
+import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -15,6 +14,8 @@ import { exportCsv } from "@/lib/utils"
 import { Eye } from "lucide-react"
 import PageHeader from "@/components/admin/page-header"
 import { TableCard } from "@/components/admin/table-card"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchOrders, selectOrders, selectOrdersLoading } from "@/store/orders"
 
 export default function OrdersPage() {
   const [q, setQ] = useState("")
@@ -24,9 +25,16 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selected, setSelected] = useState<string[]>([])
+  const dispatch = useAppDispatch()
+  const data = useAppSelector(selectOrders)
+  const loading = useAppSelector(selectOrdersLoading)
+
+  useEffect(() => {
+    dispatch(fetchOrders())
+  }, [dispatch])
 
   const filtered = useMemo(() => {
-    return ordersData.filter((o) => {
+    return data?.filter((o:any) => {
       const matchesQ = q
         ? o.id.toLowerCase().includes(q.toLowerCase()) ||
         o.customer.toLowerCase().includes(q.toLowerCase())
@@ -34,10 +42,10 @@ export default function OrdersPage() {
       const matchesStatus = status === "all" ? true : o.status === status
       return matchesQ && matchesStatus
     })
-  }, [q, status])
+  }, [data, q, status])
 
   const sorted = useMemo(() => {
-    const list = [...filtered]
+    const list = [...filtered || []]
     list.sort((a: any, b: any) => {
       const av = a[sortKey]
       const bv = b[sortKey]
@@ -65,7 +73,7 @@ export default function OrdersPage() {
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h2 className="text-lg font-semibold leading-none tracking-tight">Orders</h2>
-          <p className="mt-1 text-xs text-muted-foreground">{total} orders</p>
+          <p className="mt-1 text-xs text-muted-foreground">{total} orders found</p>
         </div>
         <div className="flex items-center gap-2">
           <PermissionGate allow="orders:export">
@@ -107,7 +115,7 @@ export default function OrdersPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const rows = ordersData.filter((o) => selected.includes(o.id))
+                    const rows = data?.filter((o) => selected.includes(o.id)) || []
                     const header = ["id", "customer", "total", "date", "status"]
                     const csv = [header.join(","), ...rows.map((r) => header.map((h) => (r as any)[h]).join(","))].join("\n")
                     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))

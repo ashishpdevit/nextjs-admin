@@ -89,7 +89,7 @@ yarn dev
 
 For development, use these credentials to access the admin panel:
 - **Email**: `admin@yopmail.com`
-- **Password**: `Admin@123`
+- **Password**: `AdminPass123!`
 
 ## 📖 Usage Guide
 

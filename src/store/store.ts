@@ -2,6 +2,8 @@
 import { configureStore } from "@reduxjs/toolkit"
 import adminReducer from "@/store/admin"
 import customersReducer from "@/store/customers"
+import productsReducer from "@/store/products"
+import ordersReducer from "@/store/orders"
 import appSettingsReducer from "@/store/appSettings"
 import appMenuLinksReducer from "@/store/appMenuLinks"
 import contactReducer from "@/store/contact"
@@ -13,6 +15,8 @@ export const makeStore = () =>
     reducer: {
       admins: adminReducer,
       customers: customersReducer,
+      products: productsReducer,
+      orders: ordersReducer,
       appSettings: appSettingsReducer,
       appMenuLinks: appMenuLinksReducer,
       contact: contactReducer,

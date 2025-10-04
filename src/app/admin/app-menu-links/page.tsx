@@ -30,7 +30,7 @@ export default function AppMenuLinksPage() {
   }, [dispatch])
 
   const filtered = useMemo(() => {
-    return data.filter((l) => {
+    return data?.filter((l:any) => {
       const mq = q ? l.name.toLowerCase().includes(q.toLowerCase()) : true
       const mt = type === "all" ? true : l.type === type
       const mf = target === "all" ? true : l.for === target

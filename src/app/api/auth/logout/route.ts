@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/auth/logout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -46,3 +46,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

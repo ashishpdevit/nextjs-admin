@@ -30,7 +30,7 @@ export async function fetchFaqsApi(): Promise<Faq[]> {
     await new Promise((r) => setTimeout(r, 150))
     return readMock()
   }
-  const res = await axios.get<Faq[]>("/faqs")
+  const res = await axios.get<Faq[]>("/api/admin/faqs")
   return res.data
 }
 
@@ -42,7 +42,7 @@ export async function createFaqApi(payload: Omit<Faq, "id">): Promise<Faq> {
     writeMock([created, ...list])
     return created
   }
-  const res = await axios.post<Faq>("/faqs", payload)
+  const res = await axios.post<Faq>("/api/admin/faqs", payload)
   return res.data
 }
 
@@ -52,7 +52,7 @@ export async function updateFaqApi(payload: Faq): Promise<Faq> {
     writeMock(list)
     return payload
   }
-  const res = await axios.put<Faq>(`/faqs/${payload.id}`, payload)
+  const res = await axios.put<Faq>(`/api/admin/faqs/${payload.id}`, payload)
   return res.data
 }
 
@@ -62,6 +62,7 @@ export async function deleteFaqApi(id: number): Promise<number> {
     writeMock(left)
     return id
   }
-  await axios.delete(`/faqs/${id}`)
+  await axios.delete(`/api/admin/faqs/${id}`)
   return id
 }
+

@@ -31,7 +31,7 @@ export default function ForgotPage() {
     setMessage("")
 
     try {
-      const response = await axios.post('/auth/forgot-password', { email })
+      const response = await axios.post('/admin/auth/forgot-password', { email })
       
       if (response.data.success) {
         setMessage(response.data.message)

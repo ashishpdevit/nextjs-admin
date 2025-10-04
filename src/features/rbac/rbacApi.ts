@@ -12,7 +12,7 @@ import type {
   UpsertRolePayload,
 } from "./rbacTypes"
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false"
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK == "false"
 const STORAGE_KEY = "rbac:snapshot:v1"
 
 const DEFAULT_SNAPSHOT: RBACSnapshot = {

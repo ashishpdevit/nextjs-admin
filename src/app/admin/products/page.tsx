@@ -1,6 +1,5 @@
 "use client"
-import { useMemo, useState, Suspense } from "react"
-import productsData from "@/mocks/products.json"
+import { useEffect, useMemo, useState, Suspense } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -19,6 +18,8 @@ import EditProductModal from "@/components/modules/products/EditProductModal"
 import ProductViewModal from "@/components/modules/products/ProductViewModal"
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchProducts, selectProducts, selectProductsLoading, toggleStatus, removeProduct } from "@/store/products"
 
 
 
@@ -36,18 +37,24 @@ export default function ProductsPage() {
   const [showViewModal, setShowViewModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any | null>(null)
   const [viewingProduct, setViewingProduct] = useState<any | null>(null)
-  const [products, setProducts] = useState(productsData)
+  const dispatch = useAppDispatch()
+  const data = useAppSelector(selectProducts)
+  const loading = useAppSelector(selectProductsLoading)
+
+  useEffect(() => {
+    dispatch(fetchProducts())
+  }, [dispatch])
 
   const filtered = useMemo(() => {
-    return products.filter((p) => {
+    return data?.data?.filter((p:any) => {
       const matchesQ = q ? p.name.toLowerCase().includes(q.toLowerCase()) : true
       const matchesStatus = status === "all" ? true : p.status === status
       return matchesQ && matchesStatus
     })
-  }, [products, q, status])
+  }, [data, q, status])
 
   const sorted = useMemo(() => {
-    const list = [...filtered]
+    const list = [...filtered || []]
     list.sort((a: any, b: any) => {
       const av = a[sortKey]
       const bv = b[sortKey]
@@ -71,12 +78,8 @@ export default function ProductsPage() {
   }
 
   const handleCreateProduct = (productData: CreateProductPayload) => {
-    // Generate new ID
-    const newId = Math.max(...products.map(p => p.id)) + 1
-    
     // Create new product object
     const newProduct = {
-      id: newId,
       name: productData.name,
       price: productData.price,
       inventory: productData.inventory,
@@ -93,8 +96,8 @@ export default function ProductsPage() {
       variants: []
     }
     
-    // Add to products state
-    setProducts(prev => [...prev, newProduct])
+    // Dispatch to Redux store
+    dispatch(createProduct(newProduct))
     
     // Show success message
     toast.success("Product created successfully")
@@ -114,10 +117,8 @@ export default function ProductsPage() {
   }
 
   const handleUpdateProduct = (updatedProduct: any) => {
-    // Update product in state
-    setProducts(prev => 
-      prev.map(p => p.id === updatedProduct.id ? updatedProduct : p)
-    )
+    // Dispatch to Redux store
+    dispatch(updateProduct(updatedProduct))
     
     // Show success message
     toast.success("Product updated successfully")
@@ -128,7 +129,7 @@ export default function ProductsPage() {
   }
 
   const handleDeleteProduct = async (id: number) => {
-    const product = products.find(p => p.id === id)
+    const product = data?.find(p => p.id === id)
     const ok = await confirm({ 
       title: "Delete Product", 
       description: `Are you sure you want to delete ${product?.name}? This action cannot be undone.`, 
@@ -136,8 +137,7 @@ export default function ProductsPage() {
       variant: "destructive" 
     })
     if (ok) { 
-      // Remove product from state
-      setProducts(prev => prev.filter(p => p.id !== id))
+      dispatch(removeProduct(id))
       toast.success("Product deleted successfully")
     }
   }
@@ -147,7 +147,7 @@ export default function ProductsPage() {
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h2 className="text-lg font-semibold leading-none tracking-tight">Products</h2>
-          <p className="mt-1 text-xs text-muted-foreground">{total} products</p>
+          <p className="mt-1 text-xs text-muted-foreground">{total} products found</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => {
@@ -184,17 +184,17 @@ export default function ProductsPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  const rows = products.filter((p) => selected.includes(p.id))
-                  const header = ["id", "name", "price", "inventory", "status"]
-                  const csv = [header.join(","), ...rows.map((r) => header.map((h) => (r as any)[h]).join(","))].join("\n")
-                  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
-                  const a = document.createElement("a")
-                  a.href = url
-                  a.download = "products.csv"
-                  a.click()
-                  URL.revokeObjectURL(url)
-                }}
+                  onClick={() => {
+                    const rows = data?.filter((p) => selected.includes(p.id)) || []
+                    const header = ["id", "name", "price", "inventory", "status"]
+                    const csv = [header.join(","), ...rows.map((r) => header.map((h) => (r as any)[h]).join(","))].join("\n")
+                    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
+                    const a = document.createElement("a")
+                    a.href = url
+                    a.download = "products.csv"
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
               >
                 Export CSV
               </Button>

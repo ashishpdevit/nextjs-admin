@@ -48,7 +48,7 @@ export default function SignupPage() {
             
             try {
               // For demo purposes, only allow admin credentials
-              if (email === "admin@yopmail.com" && password === "Admin@123") {
+              if (email === "admin@yopmail.com" && password === "AdminPass123!") {
                 const result = login(email, password)
                 if (result.success) {
                   router.replace("/admin")
@@ -56,7 +56,7 @@ export default function SignupPage() {
                   alert(result.message || "Signup failed")
                 }
               } else {
-                alert("For demo purposes, please use admin@yopmail.com / Admin@123")
+                alert("For demo purposes, please use admin@yopmail.com / AdminPass123!")
               }
             } catch (error) {
               alert("An unexpected error occurred. Please try again.")

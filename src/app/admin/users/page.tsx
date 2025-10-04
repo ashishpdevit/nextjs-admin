@@ -36,7 +36,7 @@ export default function UsersPage() {
   }, [dispatch])
 
   const filtered = useMemo(() => {
-    return data.filter((u) => {
+    return data?.data?.filter((u:any) => {
       const matchesQ = q
         ? u.name.toLowerCase().includes(q.toLowerCase()) ||
           u.email.toLowerCase().includes(q.toLowerCase())
@@ -47,7 +47,7 @@ export default function UsersPage() {
   }, [q, status, data])
 
   const sorted = useMemo(() => {
-    const list = [...filtered]
+    const list = [...filtered || []]
     list.sort((a: any, b: any) => {
       const av = a[sortKey]
       const bv = b[sortKey]
@@ -118,7 +118,7 @@ export default function UsersPage() {
             <Button
               variant="outline"
               onClick={() => {
-                const rows = data.filter((u) => selected.includes(u.id))
+                const rows = data?.filter((u) => selected.includes(u.id))
                 const header = ["id", "name", "email", "role", "status"]
                 const csv = [header.join(","), ...rows.map((r) => header.map((h) => (r as any)[h]).join(","))].join("\n")
                 const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))

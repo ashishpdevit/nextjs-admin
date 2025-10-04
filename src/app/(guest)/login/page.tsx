@@ -5,14 +5,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { getAuthClient, login } from "@/lib/auth"
+import { getAuthClient, login, loginWithAPI } from "@/lib/auth"
 import AuthCard from "@/components/auth/auth-card"
 
 export default function LoginPage() {
   const router = useRouter()
   const params = useSearchParams()
   const [email, setEmail] = useState("admin@yopmail.com")
-  const [password, setPassword] = useState("Admin@123")
+  const [password, setPassword] = useState("AdminPass123!")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -32,8 +32,18 @@ export default function LoginPage() {
     try {
       // For development, use local validation
       // In production, switch to loginWithAPI(email, password)
-      const result = login(email, password)
+      // const result = login(email, password)
+      const result = await loginWithAPI(email, password)
       
+      if (result.success) {
+        const next = params.get("next") || "/admin"
+        //set auth token in local storage
+        console.log(result)
+        localStorage.setItem("auth_token", result.data.token || "")
+        // router.replace(next)
+      } else {
+        setError(result.message || "Login failed")
+      }
       if (result.success) {
         const next = params.get("next") || "/admin"
         router.replace(next)

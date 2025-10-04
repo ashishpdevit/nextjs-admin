@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // TODO: Replace with actual API call to your backend
     // Example implementation:
     /*
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/auth/forgot-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,3 +60,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

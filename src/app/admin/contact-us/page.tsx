@@ -28,7 +28,7 @@ export default function ContactUsPage() {
   useEffect(() => { dispatch(fetchMessages()) }, [dispatch])
 
   const filtered = useMemo(() => {
-    return messages.filter((m) =>
+    return messages?.filter((m:any) =>
       q ? (m.message + " " + m.contact).toLowerCase().includes(q.toLowerCase()) : true
     )
   }, [q, messages])

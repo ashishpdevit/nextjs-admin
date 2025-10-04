@@ -1,9 +1,9 @@
-﻿import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 // Development credentials for demo
 const DEV_CREDENTIALS = {
   email: "admin@yopmail.com",
-  password: "Admin@123"
+  password: "AdminPass123!"
 }
 
 export async function POST(request: NextRequest) {
@@ -19,30 +19,30 @@ export async function POST(request: NextRequest) {
     }
 
     // For development: validate against hardcoded credentials
-    if (email === DEV_CREDENTIALS.email && password === DEV_CREDENTIALS.password) {
-      const user = {
-        email: email,
-        name: "Admin User",
-        roleId: "super-admin",
-        role: "Super Admin",
-        permissions: ["*"]
-      }
+    // if (email === DEV_CREDENTIALS.email && password === DEV_CREDENTIALS.password) {
+    //   const user = {
+    //     email: email,
+    //     name: "Admin User",
+    //     roleId: "super-admin",
+    //     role: "Super Admin",
+    //     permissions: ["*"]
+    //   }
 
-      return NextResponse.json({
-        success: true,
-        message: "Login successful",
-        user: user
-      })
-    }
+    //   return NextResponse.json({
+    //     success: true,
+    //     message: "Login successful",
+    //     user: user
+    //   })
+    // }
 
     // TODO: Replace with actual API call to your backend
     // Example implementation:
-    /*
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+    
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.API_KEY}`,
+        // 'Authorization': `Bearer ${process.env.API_KEY}`,
       },
       body: JSON.stringify({ email, password }),
     })
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json()
     return NextResponse.json(data)
-    */
+    
 
     // Invalid credentials
     return NextResponse.json(
@@ -72,3 +72,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

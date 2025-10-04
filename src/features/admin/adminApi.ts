@@ -17,6 +17,6 @@ export async function fetchAdminsApi(): Promise<Admin[]> {
     await new Promise((r) => setTimeout(r, 200))
     return mockAdmins.map((u) => ({ ...u, status: u.status === "Suspended" ? "Inactive" : (u.status as any) }))
   }
-  const res = await axios.get<Admin[]>("/admins")
+  const res = await axios.get<Admin[]>("/api/admin/users")
   return res.data
 }

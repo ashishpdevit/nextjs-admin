@@ -34,7 +34,7 @@ export default function FaqsPage() {
   useEffect(() => { dispatch(fetchFaqs()) }, [dispatch])
 
   const filtered = useMemo(() => {
-    return data.filter((f) => {
+    return data?.filter((f:any) => {
       const text = languages
         .map((l) => (f.question[l.code] || "") + " " + (f.answer[l.code] || ""))
         .join(" ")

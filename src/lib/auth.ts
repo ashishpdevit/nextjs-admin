@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 export interface User {
   email: string
@@ -11,7 +11,7 @@ export interface User {
 // Development credentials
 const DEV_CREDENTIALS = {
   email: "admin@yopmail.com",
-  password: "Admin@123",
+  password: "AdminPass123!",
   user: {
     email: "admin@yopmail.com",
     name: "Admin User",
@@ -86,18 +86,20 @@ export function logout() {
 export async function loginWithAPI(
   email: string,
   password: string,
-): Promise<{ success: boolean; message?: string; user?: User }>
+): Promise<{ success: boolean; message?: string; user?: User, token?: string }>
 {
   try {
     const { axios } = await import("@/lib/axios")
-    const response = await axios.post<{ success: boolean; message?: string; user?: User }>("/auth/login", {
+    const response = await axios.post<{ success: boolean; message?: string; user?: User, token?: string }>("/api/admin/auth/login", {
       email,
       password,
     })
+    console.log("87",response)
 
     if (response.data.success && response.data.user) {
       localStorage.setItem("user", JSON.stringify(response.data.user))
       setAuth(true, response.data.user)
+      localStorage.setItem("auth_token", response.data.token || "")
     }
 
     return response.data
@@ -112,7 +114,7 @@ export async function loginWithAPI(
 export async function logoutWithAPI(): Promise<{ success: boolean }> {
   try {
     const { axios } = await import("@/lib/axios")
-    await axios.post("/auth/logout")
+    await axios.post("/admin/auth/logout")
   } catch {
     // Continue even if API call fails
   }

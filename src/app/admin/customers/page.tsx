@@ -1,6 +1,5 @@
 "use client"
-import { useMemo, useState } from "react"
-import customersData from "@/mocks/customers.json"
+import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -15,45 +14,41 @@ import { exportCsv } from "@/lib/utils"
 import PageHeader from "@/components/admin/page-header"
 import { useRouter } from "next/navigation"
 import { useConfirm } from "@/components/ConfirmDialog"
-import { Toaster, toast } from 'sonner';  
-
-interface Customer {
-  id: number
-  name: string
-  email: string
-  phone: string
-  company: string
-  status: "Active" | "Inactive" | "Pending" | string
-  country: string
-  timezone: string
-  createdAt: string
-  updatedAt: string
-}
+import { Toaster, toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchCustomers, selectCustomers, selectCustomersLoading, toggleStatus, removeCustomer } from "@/store/customers"  
 
 export default function CustomersPage() {
   const router = useRouter()
   const confirm = useConfirm()
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("all")
-  const [sortKey, setSortKey] = useState<"id" | "name" | "email" | "company" | "status">("id")
+  const [sortKey, setSortKey] = useState<"id" | "name" | "email" | "status">("id")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selected, setSelected] = useState<number[]>([])
-  const [customers, setCustomers] = useState(customersData)
+  const dispatch = useAppDispatch()
+  const data = useAppSelector(selectCustomers)
+  const loading = useAppSelector(selectCustomersLoading)
+  const [editing, setEditing] = useState<any | null>(null)
+  const [creating, setCreating] = useState<any | null>(null)
+
+  useEffect(() => {
+    dispatch(fetchCustomers())
+  }, [dispatch])
 
   const filtered = useMemo(() => {
-    return customers.filter((c) => {
+    return data?.filter((c:any) => {
       const matchesQ = q ? c.name.toLowerCase().includes(q.toLowerCase()) || 
-                              c.email.toLowerCase().includes(q.toLowerCase()) ||
-                              c.company.toLowerCase().includes(q.toLowerCase()) : true
+                              c.email.toLowerCase().includes(q.toLowerCase()) : true
       const matchesStatus = status === "all" ? true : c.status === status
       return matchesQ && matchesStatus
     })
-  }, [customers, q, status])
+  }, [data, q, status])
 
   const sorted = useMemo(() => {
-    const list = [...filtered]
+    const list = [...filtered || []]
     list.sort((a: any, b: any) => {
       const av = a[sortKey]
       const bv = b[sortKey]
@@ -80,16 +75,16 @@ export default function CustomersPage() {
     router.push("/admin/customers/create")
   }
 
-  const handleEditCustomer = (customer: Customer) => {
+  const handleEditCustomer = (customer: any) => {
     router.push(`/admin/customers/edit/${customer.id}`)
   }
 
-  const handleViewCustomer = (customer: Customer) => {
+  const handleViewCustomer = (customer: any) => {
     router.push(`/admin/customers/${customer.id}`)
   }
 
   const handleDeleteCustomer = async (id: number) => {
-    const customer = customers.find(c => c.id === id)
+    const customer = data?.find(c => c.id === id)
     const ok = await confirm({ 
       title: "Delete Customer", 
       description: `Are you sure you want to delete ${customer?.name}? This action cannot be undone.`, 
@@ -97,8 +92,7 @@ export default function CustomersPage() {
       variant: "destructive" 
     })
     if (ok) { 
-      // Remove customer from state
-      setCustomers(prev => prev.filter(c => c.id !== id))
+      dispatch(removeCustomer(id))
       toast.success("Customer deleted successfully")
     }
   }
@@ -124,12 +118,12 @@ export default function CustomersPage() {
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h2 className="text-lg font-semibold leading-none tracking-tight">Customers</h2>
-          <p className="mt-1 text-xs text-muted-foreground">{total} customers</p>
+          <p className="mt-1 text-xs text-muted-foreground">{total} customers found</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => {
             const rows = sorted
-            const cols = ["id", "name", "email", "company", "status", "country"]
+            const cols = ["id", "name", "email", "status"]
             exportCsv("customers.csv", rows, cols)
           }}>Export</Button>
           <Button onClick={handleCreateCustomer}>
@@ -168,8 +162,6 @@ export default function CustomersPage() {
                 ["id", "ID"],
                 ["name", "Customer"],
                 ["email", "Email"],
-                ["company", "Company"],
-                ["country", "Country"],
                 ["status", "Status"],
                 ["action", "Action"],
               ].map(([key, label]) => (
@@ -215,13 +207,6 @@ export default function CustomersPage() {
                   </div>
                 </TableCell>
                 <TableCell>{c.email}</TableCell>
-                <TableCell>{c.company}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{getCountryFlag(c.country)}</span>
-                    <span>{c.country}</span>
-                  </div>
-                </TableCell>
                 <TableCell>
                   <Badge variant={c.status === "Active" ? "default" : "secondary"}>{c.status}</Badge>
                 </TableCell>
