@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* 👇 Add this */
+body {
+  @apply bg-[#f7f7f7] text-gray-900;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -76,6 +81,7 @@
   --sidebar-accent-foreground: oklch(0.28 0.03 262);
   --sidebar-border: oklch(0.92 0.006 264.531);
   --sidebar-ring: oklch(0.6 0.22 264.5);
+  --main-background: oklch(0.97 0.01 247.5);
 }
 
 .dark {

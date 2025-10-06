@@ -71,16 +71,22 @@ export function login(email: string, password: string): { success: boolean; mess
     }
   }
 
-  localStorage.setItem("user", JSON.stringify(validation.user))
+  if (typeof window !== "undefined") {
+    localStorage.setItem("user", JSON.stringify(validation.user))
+  }
   setAuth(true, validation.user)
 
   return { success: true }
 }
 
 export function logout() {
-  localStorage.removeItem("user")
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("user")
+  }
   setAuth(false)
-  document.cookie = "user=; Path=/; Max-Age=0"
+  if (typeof document !== "undefined") {
+    document.cookie = "user=; Path=/; Max-Age=0"
+  }
 }
 
 export async function loginWithAPI(
@@ -97,9 +103,11 @@ export async function loginWithAPI(
     console.log("87",response)
 
     if (response.data.success && response.data.user) {
-      localStorage.setItem("user", JSON.stringify(response.data.user))
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(response.data.user))
+        localStorage.setItem("auth_token", response.data.token || "")
+      }
       setAuth(true, response.data.user)
-      localStorage.setItem("auth_token", response.data.token || "")
     }
 
     return response.data

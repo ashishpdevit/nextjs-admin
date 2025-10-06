@@ -16,7 +16,7 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
           </nav>
         </div>
       </header>
-      <main className={cn("max-w-screen-4xl p-4 md:p-6 flex-1 flex items-center justify-center")}> 
+      <main className={cn("max-w-screen-4xl p-4 md:p-6 flex-1 flex items-center justify-center bg-main-background")}> 
         {children}
       </main>
       <footer className="mt-auto border-t bg-background">

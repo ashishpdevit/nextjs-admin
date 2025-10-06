@@ -14,7 +14,7 @@ export default function AdminLayout({
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 p-3 md:p-4">
+        <main className="flex-1 p-3 md:p-4 bg-main-background">
           <div className="mx-auto w-full max-w-screen-2xl">
             <ErrorBoundary>
               <Suspense fallback={<LoadingSpinner message="Loading page..." />}>

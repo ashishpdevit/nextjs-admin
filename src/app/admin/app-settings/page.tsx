@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,8 @@ import { FiltersBar } from "@/components/admin/filters"
 import { exportCsv } from "@/lib/utils"
 import PageHeader from "@/components/admin/page-header"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchAppSettings, saveAppSetting, selectAppSettings } from "@/store/appSettings"
+import { fetchAppSettings, saveAppSetting, selectAppSettings, selectAppSettingsLoading } from "@/store/appSettings"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 
 export default function AppSettingsPage() {
   const [q, setQ] = useState("")
@@ -22,11 +23,21 @@ export default function AppSettingsPage() {
   const [selected, setSelected] = useState<number[]>([])
   const dispatch = useAppDispatch()
   const data = useAppSelector(selectAppSettings)
+  const loading = useAppSelector(selectAppSettingsLoading)
   const [editing, setEditing] = useState<any | null>(null)
 
+  const hasFetched = useRef(false)
+
+  const fetchData = useCallback(() => {
+    if (!hasFetched.current && !loading && (!data || data.length === 0)) {
+      hasFetched.current = true
+      dispatch(fetchAppSettings())
+    }
+  }, [dispatch, loading, data])
+
   useEffect(() => {
-    dispatch(fetchAppSettings())
-  }, [dispatch])
+    fetchData()
+  }, [fetchData])
 
   const filtered = useMemo(() => {
     return data.filter((s) =>
@@ -79,7 +90,15 @@ export default function AppSettingsPage() {
           </div>
         </div>
 
-        <Table className="admin-table">
+        {loading ? (
+          <TableLoadingState message="Loading app settings..." />
+        ) : paged.length === 0 ? (
+          <TableEmptyState 
+            title="No app settings found"
+            message="Try adjusting your search criteria to find what you're looking for."
+          />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -140,16 +159,19 @@ export default function AppSettingsPage() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        )}
 
-        <Pagination
-          page={page}
-          total={total}
-          pageSize={pageSize}
-          onChange={setPage}
-          showPageSize
-          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
-        />
+        {!loading && paged.length > 0 && (
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onChange={setPage}
+            showPageSize
+            onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+          />
+        )}
 
         {editing && (
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setEditing(null)}>

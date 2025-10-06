@@ -31,8 +31,8 @@ export async function fetchAppMenuLinksApi(): Promise<AppMenuLink[]> {
     await new Promise((r) => setTimeout(r, 150))
     return readMock()
   }
-  const res = await axios.get<AppMenuLink[]>("/api/admin/menu-links")
-  return res.data
+  const res = await axios.get<{success: boolean, message: string, data: AppMenuLink[]}>("/api/admin/menu-links")
+  return res.data.data
 }
 
 export async function updateAppMenuLinkApi(update: AppMenuLink): Promise<AppMenuLink> {
@@ -41,6 +41,6 @@ export async function updateAppMenuLinkApi(update: AppMenuLink): Promise<AppMenu
     writeMock(list)
     return list.find((i) => i.id === update.id) as AppMenuLink
   }
-  const res = await axios.put<AppMenuLink>(`/api/admin/menu-links/${update.id}`, update)
-  return res.data
+  const res = await axios.put<{success: boolean, message: string, data: AppMenuLink}>(`/api/admin/menu-links/${update.id}`, update)
+  return res.data.data
 }

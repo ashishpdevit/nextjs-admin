@@ -24,8 +24,8 @@ export async function fetchContactMessagesApi(): Promise<ContactMessage[]> {
     await new Promise((r) => setTimeout(r, 150))
     return readMock()
   }
-  const res = await axios.get<ContactMessage[]>("/api/admin/contact-requests")
-  return res.data
+  const res = await axios.get<{success: boolean, message: string, data: ContactMessage[]}>("/api/admin/contact-requests")
+  return res.data.data
 }
 
 export async function deleteContactMessageApi(id: number): Promise<number> {

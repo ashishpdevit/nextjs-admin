@@ -12,7 +12,7 @@ import type {
   UpsertRolePayload,
 } from "./rbacTypes"
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK == "false"
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false"
 const STORAGE_KEY = "rbac:snapshot:v1"
 
 const DEFAULT_SNAPSHOT: RBACSnapshot = {
@@ -125,8 +125,8 @@ function computePermissionId(resource: string, action: string) {
 
 export async function fetchRbacSnapshotApi(): Promise<RBACSnapshot> {
   if (!USE_MOCK) {
-    const response = await axios.get<RBACSnapshot>("/rbac")
-    return response.data
+    const response = await axios.get<{success: boolean, message: string, data: RBACSnapshot}>("/api/rbac")
+    return response.data.data
   }
 
   await delay(120)
@@ -136,11 +136,11 @@ export async function fetchRbacSnapshotApi(): Promise<RBACSnapshot> {
 export async function upsertModuleApi(payload: UpsertModulePayload): Promise<Module> {
   if (!USE_MOCK) {
     if (payload.id) {
-      const response = await axios.put<Module>(`/rbac/modules/${payload.id}`, payload)
-      return response.data
+      const response = await axios.put<{success: boolean, message: string, data: Module}>(`/rbac/modules/${payload.id}`, payload)
+      return response.data.data
     }
-    const response = await axios.post<Module>("/rbac/modules", payload)
-    return response.data
+    const response = await axios.post<{success: boolean, message: string, data: Module}>("/rbac/modules", payload)
+    return response.data.data
   }
 
   const snapshot = ensureSnapshot()
@@ -196,11 +196,11 @@ export async function deleteModuleApi(moduleId: string): Promise<void> {
 export async function upsertPermissionApi(payload: UpsertPermissionPayload): Promise<Permission> {
   if (!USE_MOCK) {
     if (payload.id) {
-      const response = await axios.put<Permission>(`/rbac/permissions/${payload.id}`, payload)
-      return response.data
+      const response = await axios.put<{success: boolean, message: string, data: Permission}>(`/rbac/permissions/${payload.id}`, payload)
+      return response.data.data
     }
-    const response = await axios.post<Permission>("/rbac/permissions", payload)
-    return response.data
+    const response = await axios.post<{success: boolean, message: string, data: Permission}>("/rbac/permissions", payload)
+    return response.data.data
   }
 
   const snapshot = ensureSnapshot()
@@ -250,11 +250,11 @@ export async function deletePermissionApi(permissionId: string): Promise<void> {
 export async function upsertRoleApi(payload: UpsertRolePayload): Promise<Role> {
   if (!USE_MOCK) {
     if (payload.id) {
-      const response = await axios.put<Role>(`/rbac/roles/${payload.id}`, payload)
-      return response.data
+      const response = await axios.put<{success: boolean, message: string, data: Role}>(`/rbac/roles/${payload.id}`, payload)
+      return response.data.data
     }
-    const response = await axios.post<Role>("/rbac/roles", payload)
-    return response.data
+    const response = await axios.post<{success: boolean, message: string, data: Role}>("/rbac/roles", payload)
+    return response.data.data
   }
 
   const snapshot = ensureSnapshot()
@@ -311,11 +311,11 @@ export async function deleteRoleApi(roleId: string): Promise<void> {
 export async function upsertAssignmentApi(payload: UpsertAssignmentPayload): Promise<RoleAssignment> {
   if (!USE_MOCK) {
     if (payload.id) {
-      const response = await axios.put<RoleAssignment>(`/rbac/assignments/${payload.id}`, payload)
-      return response.data
+      const response = await axios.put<{success: boolean, message: string, data: RoleAssignment}>(`/rbac/assignments/${payload.id}`, payload)
+      return response.data.data
     }
-    const response = await axios.post<RoleAssignment>("/rbac/assignments", payload)
-    return response.data
+    const response = await axios.post<{success: boolean, message: string, data: RoleAssignment}>("/rbac/assignments", payload)
+    return response.data.data
   }
 
   const snapshot = ensureSnapshot()
@@ -371,8 +371,8 @@ export async function deleteAssignmentApi(assignmentId: string): Promise<void> {
 
 export async function resetRbacSnapshotApi(): Promise<RBACSnapshot> {
   if (!USE_MOCK) {
-    const response = await axios.post<RBACSnapshot>("/rbac/reset", {})
-    return response.data
+    const response = await axios.post<{success: boolean, message: string, data: RBACSnapshot}>("/rbac/reset", {})
+    return response.data.data
   }
 
   const snapshot = cloneSnapshot(DEFAULT_SNAPSHOT)

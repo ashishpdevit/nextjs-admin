@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
@@ -10,30 +10,40 @@ import { Button } from "@/components/ui/button"
 import { FiltersBar } from "@/components/admin/filters"
 import { exportCsv } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchAppMenuLinks, saveAppMenuLink, selectAppMenuLinks } from "@/store/appMenuLinks"
+import { fetchAppMenuLinks, saveAppMenuLink, selectAppMenuLinks, selectAppMenuLinksLoading } from "@/store/appMenuLinks"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 
 export default function AppMenuLinksPage() {
   const [q, setQ] = useState("")
   const [type, setType] = useState("all")
   const [target, setTarget] = useState("all")
-  const [sortKey, setSortKey] = useState<"name" | "type" | "for" | "updatedAt">("updatedAt")
+  const [sortKey, setSortKey] = useState<"name" | "type" | "audience" | "updatedAt">("updatedAt")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selected, setSelected] = useState<number[]>([])
   const dispatch = useAppDispatch()
   const data = useAppSelector(selectAppMenuLinks)
+  const loading = useAppSelector(selectAppMenuLinksLoading)
   const [editing, setEditing] = useState<any | null>(null)
+  const hasFetched = useRef(false)
+
+  const fetchData = useCallback(() => {
+    if (!hasFetched.current && !loading && (!data || data.length === 0)) {
+      hasFetched.current = true
+      dispatch(fetchAppMenuLinks())
+    }
+  }, [dispatch, loading, data])
 
   useEffect(() => {
-    dispatch(fetchAppMenuLinks())
-  }, [dispatch])
+    fetchData()
+  }, [fetchData])
 
   const filtered = useMemo(() => {
     return data?.filter((l:any) => {
       const mq = q ? l.name.toLowerCase().includes(q.toLowerCase()) : true
       const mt = type === "all" ? true : l.type === type
-      const mf = target === "all" ? true : l.for === target
+      const mf = target === "all" ? true : l.audience === target
       return mq && mt && mf
     })
   }, [q, type, target, data])
@@ -68,7 +78,7 @@ export default function AppMenuLinksPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => {
             const rows = sorted
-            const cols = ["name", "type", "for", "updatedAt", "link"]
+            const cols = ["name", "type", "audience", "updatedAt", "link"]
             exportCsv("app-menu-links.csv", rows, cols)
           }}>Export</Button>
         </div>
@@ -93,7 +103,15 @@ export default function AppMenuLinksPage() {
           </FiltersBar>
         </div>
 
-        <Table className="admin-table">
+        {loading ? (
+          <TableLoadingState message="Loading menu links..." />
+        ) : paged.length === 0 ? (
+          <TableEmptyState 
+            title="No menu links found"
+            message="Try adjusting your search or filter criteria to find what you're looking for."
+          />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -109,7 +127,7 @@ export default function AppMenuLinksPage() {
               {[
                 ["name", "Name"],
                 ["type", "Type"],
-                ["for", "For"],
+                ["audience", "For"],
                 ["updatedAt", "Last Updated"],
                 ["link", "Generated Link"],
                 ["action", "Action"],
@@ -164,16 +182,19 @@ export default function AppMenuLinksPage() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        )}
 
-        <Pagination
-          page={page}
-          total={total}
-          pageSize={pageSize}
-          onChange={setPage}
-          showPageSize
-          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
-        />
+        {!loading && paged.length > 0 && (
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onChange={setPage}
+            showPageSize
+            onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+          />
+        )}
 
         {editing && (
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setEditing(null)}>
@@ -194,7 +215,7 @@ export default function AppMenuLinksPage() {
                   </div>
                   <div className="grid gap-1.5">
                     <label className="text-sm">For</label>
-                    <Select value={editing.for} onChange={(e) => setEditing({ ...editing, for: e.target.value })}>
+                    <Select value={editing.audience} onChange={(e) => setEditing({ ...editing, audience: e.target.value })}>
                       <option value="User">User</option>
                       <option value="Website">Website</option>
                     </Select>

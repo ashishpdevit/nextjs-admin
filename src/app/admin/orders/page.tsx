@@ -1,5 +1,7 @@
 ﻿"use client"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
+import { useDebounce } from "@/hooks/use-debounce"
+import { useSmartEffect } from "@/hooks/use-smart-effect"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -15,7 +17,9 @@ import { Eye } from "lucide-react"
 import PageHeader from "@/components/admin/page-header"
 import { TableCard } from "@/components/admin/table-card"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchOrders, selectOrders, selectOrdersLoading } from "@/store/orders"
+import { fetchOrders, selectOrders, selectOrdersLoading, createOrder, updateOrder, removeOrder } from "@/store/orders"
+import { selectOrdersPagination, selectOrdersLinks } from "@/features/orders/ordersSlice"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 
 export default function OrdersPage() {
   const [q, setQ] = useState("")
@@ -28,39 +32,30 @@ export default function OrdersPage() {
   const dispatch = useAppDispatch()
   const data = useAppSelector(selectOrders)
   const loading = useAppSelector(selectOrdersLoading)
+  const pagination = useAppSelector(selectOrdersPagination)
+  const links = useAppSelector(selectOrdersLinks)
 
-  useEffect(() => {
-    dispatch(fetchOrders())
-  }, [dispatch])
+  // Debounce search query to prevent excessive API calls
+  const debouncedQ = useDebounce(q, 500)
 
-  const filtered = useMemo(() => {
-    return data?.filter((o:any) => {
-      const matchesQ = q
-        ? o.id.toLowerCase().includes(q.toLowerCase()) ||
-        o.customer.toLowerCase().includes(q.toLowerCase())
-        : true
-      const matchesStatus = status === "all" ? true : o.status === status
-      return matchesQ && matchesStatus
-    })
-  }, [data, q, status])
+  // Create a stable reference for the search parameters
+  const searchParams = useMemo(() => ({
+    page,
+    limit: pageSize,
+    sortBy: sortKey,
+    sortOrder: sortDir,
+    search: debouncedQ || undefined,
+    status: status !== 'all' ? status : undefined,
+  }), [page, pageSize, sortKey, sortDir, debouncedQ, status])
 
-  const sorted = useMemo(() => {
-    const list = [...filtered || []]
-    list.sort((a: any, b: any) => {
-      const av = a[sortKey]
-      const bv = b[sortKey]
-      if (av < bv) return sortDir === "asc" ? -1 : 1
-      if (av > bv) return sortDir === "asc" ? 1 : -1
-      return 0
-    })
-    return list
-  }, [filtered, sortKey, sortDir])
+  // Smart effect that prevents double calls but allows parameter changes
+  useSmartEffect(() => {
+    dispatch(fetchOrders(searchParams))
+  }, [dispatch, searchParams])
 
-  const total = sorted.length
-  const paged = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return sorted.slice(start, start + pageSize)
-  }, [sorted, page, pageSize])
+  // Data is already filtered, sorted, and paginated by the backend
+  const total = pagination?.total || data?.length || 0
+  const paged = data || []
 
   const allVisibleSelected = paged.every((o) => selected.includes(o.id))
   const toggleAllVisible = (checked: boolean) => {
@@ -78,7 +73,7 @@ export default function OrdersPage() {
         <div className="flex items-center gap-2">
           <PermissionGate allow="orders:export">
             <Button variant="outline" onClick={() => {
-              const rows = sorted
+              const rows = paged
               const cols = ["id", "customer", "total", "date", "status"]
               exportCsv("orders.csv", rows, cols)
             }}>Export</Button>
@@ -90,14 +85,25 @@ export default function OrdersPage() {
         <div className="table-card-header">
           <div className="table-card-title">Orders</div>
           <div className="flex items-center gap-2">
-            <Input placeholder="Search orders" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-56 md:w-72" />
+            <Input 
+              placeholder="Search orders" 
+              value={q} 
+              onChange={(e) => {
+                setQ(e.target.value)
+                setPage(1) // Reset to first page when searching
+              }} 
+              className="h-9 w-56 md:w-72" 
+            />
           </div>
         </div>
         <div className="px-2 py-2">
           <FiltersBar id="orders" values={{ status }} onLoadPreset={() => { }}>
             <span />
             <span />
-            <Select data-below value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Select data-below value={status} onChange={(e) => {
+              setStatus(e.target.value)
+              setPage(1) // Reset to first page when filtering
+            }}>
               <option value="all">All status</option>
               <option value="Paid">Paid</option>
               <option value="Pending">Pending</option>
@@ -134,7 +140,15 @@ export default function OrdersPage() {
           </div>
         )}
 
-        <Table className="admin-table">
+        {loading ? (
+          <TableLoadingState message="Loading orders..." />
+        ) : paged.length === 0 ? (
+          <TableEmptyState 
+            title="No orders found"
+            message="Try adjusting your search or filter criteria to find what you're looking for."
+          />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -152,15 +166,17 @@ export default function OrdersPage() {
                   key={key}
                   onClick={() => {
                     const k = key as typeof sortKey
-                    if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc")
-                    else {
+                    if (sortKey === k) {
+                      setSortDir(sortDir === "asc" ? "desc" : "asc")
+                    } else {
                       setSortKey(k)
                       setSortDir("asc")
                     }
+                    setPage(1) // Reset to first page when sorting changes
                   }}
                   className={"cursor-pointer select-none" + (key === "total" ? " text-right" : "")}
                 >
-                  {label} {sortKey === key ? (sortDir === "asc" ? "â–²" : "â–¼") : ""}
+                  {label} {sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </TableHead>
               ))}
             </TableRow>
@@ -194,16 +210,19 @@ export default function OrdersPage() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        )}
 
-        <Pagination
-          page={page}
-          total={total}
-          pageSize={pageSize}
-          onChange={setPage}
-          showPageSize
-          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
-        />
+        {/* {!loading && paged.length > 0 && (
+          <Pagination
+            page={pagination?.current_page || 1}
+            total={pagination?.total || 0}
+            pageSize={pagination?.per_page || 10}
+            onChange={(newPage) => { setPage(newPage) }}
+            showPageSize
+            onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+          />
+        )} */}
       </div>
     </div>
   )

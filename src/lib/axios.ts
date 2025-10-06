@@ -6,9 +6,24 @@ export const axios = Axios.create({
 
   headers: {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${localStorage.getItem("auth_token") || ""}`,
   },
 })
+
+// Set authorization header dynamically
+axios.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("auth_token")
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
 
 axios.interceptors.response.use(
   (r) => r,

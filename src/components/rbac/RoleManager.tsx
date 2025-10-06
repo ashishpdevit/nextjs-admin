@@ -11,6 +11,7 @@ import { useRBAC } from "@/hooks/use-rbac"
 import type { Permission, Role } from "@/features/rbac/rbacTypes"
 import { toast } from "sonner"
 import { Pencil, Trash2 } from "lucide-react"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 
 type RoleFormState = {
   id?: string
@@ -186,7 +187,15 @@ export function RoleManager() {
           </div>
         }
       >
-        <Table className="admin-table">
+        {loading ? (
+          <TableLoadingState message="Loading roles..." />
+        ) : roles.length === 0 ? (
+          <TableEmptyState 
+            title="No roles found"
+            message="Create your first role to get started."
+          />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -250,7 +259,8 @@ export function RoleManager() {
               </TableRow>
             )}
           </TableBody>
-        </Table>
+          </Table>
+        )}
       </TableCard>
 
       {form && (

@@ -1,5 +1,7 @@
 "use client"
-import { useEffect, useMemo, useState, Suspense } from "react"
+import { useEffect, useMemo, useState, Suspense, useCallback, useRef } from "react"
+import { useDebounce } from "@/hooks/use-debounce"
+import { useSmartEffect } from "@/hooks/use-smart-effect"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -19,7 +21,9 @@ import ProductViewModal from "@/components/modules/products/ProductViewModal"
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchProducts, selectProducts, selectProductsLoading, toggleStatus, removeProduct } from "@/store/products"
+import { fetchProducts, selectProducts, selectProductsLoading, toggleStatus, removeProduct, createProduct, updateProduct } from "@/store/products"
+import { selectProductsPagination, selectProductsLinks } from "@/features/products/productsSlice"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 
 
 
@@ -27,6 +31,7 @@ export default function ProductsPage() {
   const confirm = useConfirm()
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("all")
+  const [category, setCategory] = useState("")
   const [sortKey, setSortKey] = useState<"id" | "name" | "price" | "inventory" | "status">("id")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(1)
@@ -40,36 +45,30 @@ export default function ProductsPage() {
   const dispatch = useAppDispatch()
   const data = useAppSelector(selectProducts)
   const loading = useAppSelector(selectProductsLoading)
+  const pagination = useAppSelector(selectProductsPagination)
+  const links = useAppSelector(selectProductsLinks)
+  // Debounce search query to prevent excessive API calls
+  const debouncedQ = useDebounce(q, 500)
 
+  // Create a stable reference for the search parameters
+  const searchParams = useMemo(() => ({
+    page,
+    limit: pageSize,
+    sortBy: sortKey,
+    sortOrder: sortDir,
+    search: debouncedQ || undefined,
+    status: status !== 'all' ? status : undefined,
+    category: category || undefined,
+  }), [page, pageSize, sortKey, sortDir, debouncedQ, status, category])
+
+  // Smart effect that prevents double calls but allows parameter changes
   useEffect(() => {
-    dispatch(fetchProducts())
-  }, [dispatch])
+    dispatch(fetchProducts(searchParams))
+  }, [dispatch, searchParams])
 
-  const filtered = useMemo(() => {
-    return data?.data?.filter((p:any) => {
-      const matchesQ = q ? p.name.toLowerCase().includes(q.toLowerCase()) : true
-      const matchesStatus = status === "all" ? true : p.status === status
-      return matchesQ && matchesStatus
-    })
-  }, [data, q, status])
-
-  const sorted = useMemo(() => {
-    const list = [...filtered || []]
-    list.sort((a: any, b: any) => {
-      const av = a[sortKey]
-      const bv = b[sortKey]
-      if (av < bv) return sortDir === "asc" ? -1 : 1
-      if (av > bv) return sortDir === "asc" ? 1 : -1
-      return 0
-    })
-    return list
-  }, [filtered, sortKey, sortDir])
-
-  const total = sorted.length
-  const paged = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return sorted.slice(start, start + pageSize)
-  }, [sorted, page, pageSize])
+  // Data is already filtered, sorted, and paginated by the backend
+  const total = pagination?.total || 0
+  const paged = data || []
 
   const allVisibleSelected = paged.every((p) => selected.includes(p.id))
   const toggleAllVisible = (checked: boolean) => {
@@ -104,6 +103,17 @@ export default function ProductsPage() {
     
     // Close modal
     setShowCreateModal(false)
+    
+    // Refresh the data
+        dispatch(fetchProducts({
+          page: 1,
+          limit: pageSize,
+          sortBy: sortKey,
+          sortOrder: sortDir,
+          search: debouncedQ || undefined,
+          status: status !== 'all' ? status : undefined,
+          category: category || undefined,
+        }))
   }
 
   const handleViewProduct = (product: any) => {
@@ -126,6 +136,17 @@ export default function ProductsPage() {
     // Close modal
     setShowEditModal(false)
     setEditingProduct(null)
+    
+    // Refresh the data
+        dispatch(fetchProducts({
+          page: 1,
+          limit: pageSize,
+          sortBy: sortKey,
+          sortOrder: sortDir,
+          search: debouncedQ || undefined,
+          status: status !== 'all' ? status : undefined,
+          category: category || undefined,
+        }))
   }
 
   const handleDeleteProduct = async (id: number) => {
@@ -139,6 +160,17 @@ export default function ProductsPage() {
     if (ok) { 
       dispatch(removeProduct(id))
       toast.success("Product deleted successfully")
+      
+      // Refresh the data
+        dispatch(fetchProducts({
+          page: 1,
+          limit: pageSize,
+          sortBy: sortKey,
+          sortOrder: sortDir,
+          search: debouncedQ || undefined,
+          status: status !== 'all' ? status : undefined,
+          category: category || undefined,
+        }))
     }
   }
 
@@ -151,7 +183,7 @@ export default function ProductsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => {
-            const rows = sorted
+            const rows = paged
             const cols = ["id", "name", "price", "inventory", "status"]
             exportCsv("products.csv", rows, cols)
           }}>Export</Button>
@@ -163,17 +195,38 @@ export default function ProductsPage() {
         <div className="table-card-header">
           <div className="table-card-title">Products</div>
           <div className="flex items-center gap-2">
-            <Input placeholder="Search products" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-56 md:w-72" />
+            <Input 
+              placeholder="Search products" 
+              value={q} 
+              onChange={(e) => {
+                setQ(e.target.value)
+                setPage(1) // Reset to first page when searching
+              }} 
+              className="h-9 w-56 md:w-72" 
+            />
           </div>
         </div>
         <div className="px-2 py-2">
-          <FiltersBar id="products" values={{ status }} onLoadPreset={() => { }}>
+          <FiltersBar id="products" values={{ status, category }} onLoadPreset={() => { }}>
             <span />
             <span />
-            <Select data-below value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Select data-below value={status} onChange={(e) => {
+              setStatus(e.target.value)
+              setPage(1) // Reset to first page when filtering
+            }}>
               <option value="all">All status</option>
               <option value="Active">Active</option>
               <option value="Hidden">Hidden</option>
+            </Select>
+            <Select data-below value={category} onChange={(e) => {
+              setCategory(e.target.value)
+              setPage(1) // Reset to first page when filtering
+            }}>
+              <option value="">All categories</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Books">Books</option>
+              <option value="Home">Home</option>
             </Select>
           </FiltersBar>
         </div>
@@ -203,80 +256,93 @@ export default function ProductsPage() {
           </div>
         )}
 
-        <Table className="admin-table">
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <Checkbox checked={allVisibleSelected} onChange={(e) => toggleAllVisible(e.currentTarget.checked)} />
-              </TableHead>
-              {[
-                ["id", "ID"],
-                ["name", "Name"],
-                ["price", "Price"],
-                ["inventory", "Inventory"],
-                ["status", "Status"],
-                ["action", "Action"],
-              ].map(([key, label]) => (
-                <TableHead
-                  key={key}
-                  onClick={() => {
-                    const k = key as typeof sortKey
-                    if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc")
-                    else {
-                      setSortKey(k)
-                      setSortDir("asc")
-                    }
-                  }}
-                  className={"cursor-pointer select-none" + (key === "price" ? " text-right" : "")}
-                >
-                  {label} {sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : ""}
+        {loading ? (
+          <TableLoadingState message="Loading products..." />
+        ) : paged.length === 0 ? (
+          <TableEmptyState 
+            title="No products found"
+            message="Try adjusting your search or filter criteria to find what you're looking for."
+          />
+        ) : (
+          <Table className="admin-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Checkbox checked={allVisibleSelected} onChange={(e) => toggleAllVisible(e.currentTarget.checked)} />
                 </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selected.includes(p.id)}
-                    onChange={(e) => {
-                      const checked = e.currentTarget.checked
-                      setSelected((prev) => checked ? [...prev, p.id] : prev.filter((id) => id !== p.id))
+                {[
+                  ["id", "ID"],
+                  ["name", "Name"],
+                  ["price", "Price"],
+                  ["inventory", "Inventory"],
+                  ["status", "Status"],
+                  ["action", "Action"],
+                ].map(([key, label]) => (
+                  <TableHead
+                    key={key}
+                    onClick={() => {
+                      const k = key as typeof sortKey
+                      if (sortKey === k) {
+                        setSortDir(sortDir === "asc" ? "desc" : "asc")
+                      } else {
+                        setSortKey(k)
+                        setSortDir("asc")
+                      }
+                      setPage(1) // Reset to first page when sorting changes
                     }}
-                  />
-                </TableCell>
-                <TableCell>{p.id}</TableCell>
-                <TableCell>{p.name}</TableCell>
-                <TableCell className="text-right">${p.price.toFixed(2)}</TableCell>
-                <TableCell>{p.inventory}</TableCell>
-                <TableCell>
-                  <Badge variant={p.status === "Active" ? "default" : "secondary"}>{p.status}</Badge>
-                </TableCell>
-                <TableCell className="space-x-1">
-                  <Button variant="outline" size="sm" title="View" onClick={() => handleViewProduct(p)}>
-                    <Eye size={14} />
-                  </Button>
-                  <Button variant="outline" size="sm" title="Edit" onClick={() => handleEditProduct(p)}>
-                    <Pencil size={14} />
-                  </Button>
-                  <Button variant="outline" size="sm" title="Delete" onClick={() => handleDeleteProduct(p.id)}>
-                    <Trash size={14} />
-                  </Button>
-                </TableCell>
+                    className={"cursor-pointer select-none" + (key === "price" ? " text-right" : "")}
+                  >
+                    {label} {sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                  </TableHead>
+                ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paged.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selected.includes(p.id)}
+                      onChange={(e) => {
+                        const checked = e.currentTarget.checked
+                        setSelected((prev) => checked ? [...prev, p.id] : prev.filter((id) => id !== p.id))
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>{p.id}</TableCell>
+                  <TableCell>{p.name}</TableCell>
+                  <TableCell className="text-right">${p.price.toFixed(2)}</TableCell>
+                  <TableCell>{p.inventory}</TableCell>
+                  <TableCell>
+                    <Badge variant={p.status === "Active" ? "default" : "secondary"}>{p.status}</Badge>
+                  </TableCell>
+                  <TableCell className="space-x-1">
+                    <Button variant="outline" size="sm" title="View" onClick={() => handleViewProduct(p)}>
+                      <Eye size={14} />
+                    </Button>
+                    <Button variant="outline" size="sm" title="Edit" onClick={() => handleEditProduct(p)}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button variant="outline" size="sm" title="Delete" onClick={() => handleDeleteProduct(p.id)}>
+                      <Trash size={14} />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
 
-        <Pagination
-          page={page}
-          total={total}
-          pageSize={pageSize}
-          onChange={setPage}
-          showPageSize
-          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
-        />
+        {!loading && paged.length > 0 && (
+          <Pagination
+            page={pagination?.current_page || 1}
+            total={pagination?.total || 0}
+            pageSize={pagination?.per_page || 10}
+            onChange={(newPage) => { setPage(newPage) }}
+            showPageSize
+            onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+          />
+        )}
       </div>
 
       {/* Modals */}

@@ -1,11 +1,11 @@
 "use client"
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit"
 import type { RootState } from "@/store/store"
-import { fetchProductsApi, createProductApi, updateProductApi, deleteProductApi, type Product } from "./productsApi"
+import { fetchProductsApi, createProductApi, updateProductApi, deleteProductApi, type Product, type ProductsParams, type ProductsResponse } from "./productsApi"
 
-export const fetchProducts = createAsyncThunk("products/fetch", async () => {
-  const data = await fetchProductsApi()
-  return data
+export const fetchProducts = createAsyncThunk("products/fetch", async (params?: ProductsParams) => {
+  const response = await fetchProductsApi(params)
+  return response
 })
 
 export const createProduct = createAsyncThunk("products/create", async (payload: Omit<Product, "id">) => {
@@ -27,9 +27,40 @@ type ProductsState = {
   items: Product[]
   loading: boolean
   error?: string
+  pagination: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+  }
+  links: {
+    first: string | null
+    last: string | null
+    prev: string | null
+    next: string | null
+  }
 }
 
-const initialState: ProductsState = { items: [], loading: false }
+const initialState: ProductsState = { 
+  items: [], 
+  loading: false,
+  pagination: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: 0,
+    to: 0
+  },
+  links: {
+    first: null,
+    last: null,
+    prev: null,
+    next: null
+  }
+}
 
 const productsSlice = createSlice({
   name: "products",
@@ -50,7 +81,21 @@ const productsSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false
-        state.items = action.payload
+        state.items = action.payload?.data || []
+        state.pagination = {
+          current_page: action.payload?.meta?.current_page || 1,
+          last_page: action.payload?.meta?.last_page || 1,
+          per_page: action.payload?.meta?.per_page || 10,
+          total: action.payload?.meta?.total || 0,
+          from: action.payload?.meta?.from || 0,
+          to: action.payload?.meta?.to || 0
+        }
+        state.links = action.payload?.links || {
+          first: null,
+          last: null,
+          prev: null,
+          next: null
+        }
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false
@@ -75,3 +120,5 @@ export default productsSlice.reducer
 export const selectProducts = (s: RootState) => s.products.items
 export const selectProductsLoading = (s: RootState) => s.products.loading
 export const selectProductsError = (s: RootState) => s.products.error
+export const selectProductsPagination = (s: RootState) => s.products.pagination
+export const selectProductsLinks = (s: RootState) => s.products.links

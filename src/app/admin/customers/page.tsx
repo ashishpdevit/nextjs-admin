@@ -1,5 +1,7 @@
 "use client"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
+import { useDebounce } from "@/hooks/use-debounce"
+import { useSmartEffect } from "@/hooks/use-smart-effect"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -16,7 +18,9 @@ import { useRouter } from "next/navigation"
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchCustomers, selectCustomers, selectCustomersLoading, toggleStatus, removeCustomer } from "@/store/customers"  
+import { fetchCustomers, selectCustomers, selectCustomersLoading, toggleStatus, removeCustomer, createCustomer, updateCustomer } from "@/store/customers"
+import { selectCustomersPagination, selectCustomersLinks } from "@/features/customers/customersSlice"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"  
 
 export default function CustomersPage() {
   const router = useRouter()
@@ -31,39 +35,32 @@ export default function CustomersPage() {
   const dispatch = useAppDispatch()
   const data = useAppSelector(selectCustomers)
   const loading = useAppSelector(selectCustomersLoading)
+  const pagination = useAppSelector(selectCustomersPagination)
+  const links = useAppSelector(selectCustomersLinks)
   const [editing, setEditing] = useState<any | null>(null)
   const [creating, setCreating] = useState<any | null>(null)
 
-  useEffect(() => {
-    dispatch(fetchCustomers())
-  }, [dispatch])
+  // Debounce search query to prevent excessive API calls
+  const debouncedQ = useDebounce(q, 500)
 
-  const filtered = useMemo(() => {
-    return data?.filter((c:any) => {
-      const matchesQ = q ? c.name.toLowerCase().includes(q.toLowerCase()) || 
-                              c.email.toLowerCase().includes(q.toLowerCase()) : true
-      const matchesStatus = status === "all" ? true : c.status === status
-      return matchesQ && matchesStatus
-    })
-  }, [data, q, status])
+  // Create a stable reference for the search parameters
+  const searchParams = useMemo(() => ({
+    page,
+    limit: pageSize,
+    sortBy: sortKey,
+    sortOrder: sortDir,
+    search: debouncedQ || undefined,
+    status: status !== 'all' ? status : undefined,
+  }), [page, pageSize, sortKey, sortDir, debouncedQ, status])
 
-  const sorted = useMemo(() => {
-    const list = [...filtered || []]
-    list.sort((a: any, b: any) => {
-      const av = a[sortKey]
-      const bv = b[sortKey]
-      if (av < bv) return sortDir === "asc" ? -1 : 1
-      if (av > bv) return sortDir === "asc" ? 1 : -1
-      return 0
-    })
-    return list
-  }, [filtered, sortKey, sortDir])
+  // Smart effect that prevents double calls but allows parameter changes
+  useSmartEffect(() => {
+    dispatch(fetchCustomers(searchParams))
+  }, [dispatch, searchParams])
 
-  const total = sorted.length
-  const paged = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return sorted.slice(start, start + pageSize)
-  }, [sorted, page, pageSize])
+  // Data is already filtered, sorted, and paginated by the backend
+  const total = pagination?.total || 0
+  const paged = data || []
 
   const allVisibleSelected = paged.every((c) => selected.includes(c.id))
   const toggleAllVisible = (checked: boolean) => {
@@ -94,6 +91,16 @@ export default function CustomersPage() {
     if (ok) { 
       dispatch(removeCustomer(id))
       toast.success("Customer deleted successfully")
+      
+      // Refresh the data
+        dispatch(fetchCustomers({
+          page: 1,
+          limit: pageSize,
+          sortBy: sortKey,
+          sortOrder: sortDir,
+          search: debouncedQ || undefined,
+          status: status !== 'all' ? status : undefined,
+        }))
     }
   }
 
@@ -122,7 +129,7 @@ export default function CustomersPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => {
-            const rows = sorted
+            const rows = paged
             const cols = ["id", "name", "email", "status"]
             exportCsv("customers.csv", rows, cols)
           }}>Export</Button>
@@ -137,14 +144,25 @@ export default function CustomersPage() {
         <div className="table-card-header">
           <div className="table-card-title">Customers</div>
           <div className="flex items-center gap-2">
-            <Input placeholder="Search customers" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-56 md:w-72" />
+            <Input 
+              placeholder="Search customers" 
+              value={q} 
+              onChange={(e) => {
+                setQ(e.target.value)
+                setPage(1) // Reset to first page when searching
+              }} 
+              className="h-9 w-56 md:w-72" 
+            />
           </div>
         </div>
         <div className="px-2 py-2">
           <FiltersBar id="customers" values={{ status }} onLoadPreset={() => { }}>
             <span />
             <span />
-            <Select data-below value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Select data-below value={status} onChange={(e) => {
+              setStatus(e.target.value)
+              setPage(1) // Reset to first page when filtering
+            }}>
               <option value="all">All status</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -152,7 +170,15 @@ export default function CustomersPage() {
           </FiltersBar>
         </div>
 
-        <Table className="admin-table">
+        {loading ? (
+          <TableLoadingState message="Loading customers..." />
+        ) : paged.length === 0 ? (
+          <TableEmptyState 
+            title="No customers found"
+            message="Try adjusting your search or filter criteria to find what you're looking for."
+          />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -169,11 +195,13 @@ export default function CustomersPage() {
                   key={key}
                   onClick={() => {
                     const k = key as typeof sortKey
-                    if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc")
-                    else {
+                    if (sortKey === k) {
+                      setSortDir(sortDir === "asc" ? "desc" : "asc")
+                    } else {
                       setSortKey(k)
                       setSortDir("asc")
                     }
+                    setPage(1) // Reset to first page when sorting changes
                   }}
                   className={"cursor-pointer select-none" + (key === "id" ? " text-right" : "")}
                 >
@@ -224,16 +252,19 @@ export default function CustomersPage() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        )}
 
-        <Pagination
-          page={page}
-          total={total}
-          pageSize={pageSize}
-          onChange={setPage}
-          showPageSize
-          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
-        />
+        {!loading && paged.length > 0 && (
+          <Pagination
+            page={pagination?.current_page || 1}
+            total={pagination?.total || 0}
+            pageSize={pagination?.per_page || 10}
+            onChange={(newPage) => { setPage(newPage) }}
+            showPageSize
+            onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+          />
+        )}
       </div>
     </div>
   )

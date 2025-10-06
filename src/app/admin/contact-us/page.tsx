@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button"
 import { FiltersBar } from "@/components/admin/filters"
 import { exportCsv } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchMessages, removeMessage, selectContact } from "@/store/contact"
+import { fetchMessages, removeMessage, selectContact, selectContactLoading } from "@/store/contact"
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 
 export default function ContactUsPage() {
   const [q, setQ] = useState("")
@@ -23,9 +24,20 @@ export default function ContactUsPage() {
   const [selected, setSelected] = useState<number[]>([])
   const dispatch = useAppDispatch()
   const messages = useAppSelector(selectContact)
+  const loading = useAppSelector(selectContactLoading)
   const confirm = useConfirm()
+  const hasFetched = useRef(false)
 
-  useEffect(() => { dispatch(fetchMessages()) }, [dispatch])
+  const fetchData = useCallback(() => {
+    if (!hasFetched.current && !loading && (!messages || messages.length === 0)) {
+      hasFetched.current = true
+      dispatch(fetchMessages())
+    }
+  }, [dispatch, loading, messages])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const filtered = useMemo(() => {
     return messages?.filter((m:any) =>
@@ -77,7 +89,15 @@ export default function ContactUsPage() {
           </div>
         </div>
 
-        <Table className="admin-table">
+        {loading ? (
+          <TableLoadingState message="Loading messages..." />
+        ) : paged.length === 0 ? (
+          <TableEmptyState 
+            title="No messages found"
+            message="Try adjusting your search criteria to find what you're looking for."
+          />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -155,16 +175,19 @@ export default function ContactUsPage() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        )}
 
-        <Pagination
-          page={page}
-          total={total}
-          pageSize={pageSize}
-          onChange={setPage}
-          showPageSize
-          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
-        />
+        {!loading && paged.length > 0 && (
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onChange={setPage}
+            showPageSize
+            onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+          />
+        )}
       </div>
     </div>
   )

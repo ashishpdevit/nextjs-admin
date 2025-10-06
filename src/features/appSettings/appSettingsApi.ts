@@ -31,8 +31,8 @@ export async function fetchAppSettingsApi(): Promise<AppSetting[]> {
     await new Promise((r) => setTimeout(r, 150))
     return readMock()
   }
-  const res = await axios.get<AppSetting[]>("/api/admin/settings/app")
-  return res.data
+  const res = await axios.get<{success: boolean, message: string, data: AppSetting[]}>("/api/admin/settings/app")
+  return res.data.data
 }
 
 export async function updateAppSettingApi(update: AppSetting): Promise<AppSetting> {
@@ -41,7 +41,7 @@ export async function updateAppSettingApi(update: AppSetting): Promise<AppSettin
     writeMock(list)
     return list.find((i) => i.id === update.id) as AppSetting
   }
-  const res = await axios.put<AppSetting>(`/api/admin/settings/app/${update.id}`, update)
-  return res.data
+  const res = await axios.put<{success: boolean, message: string, data: AppSetting}>(`/api/admin/settings/app/${update.id}`, update)
+  return res.data.data
 }
 
