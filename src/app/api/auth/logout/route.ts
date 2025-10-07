@@ -4,7 +4,7 @@ export async function POST(request: NextRequest) {
   try {
     // TODO: Replace with actual API call to your backend
     // Example implementation:
-    /*
+    
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     
     if (!token) {
@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.API_KEY}`,
+        'x-api-key': process.env.NEXT_PUBLIC_API_KEY || "Test@123",
       },
       body: JSON.stringify({ token }),
     })
@@ -29,7 +30,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    */
 
     // For development, always return success
     // Client-side logout will handle cookie cleanup

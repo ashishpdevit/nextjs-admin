@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         // 'Authorization': `Bearer ${process.env.API_KEY}`,
+        'x-api-key': process.env.NEXT_PUBLIC_API_KEY || "Test@123",
       },
       body: JSON.stringify({ email, password }),
     })

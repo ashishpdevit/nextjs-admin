@@ -36,10 +36,10 @@ export default function LoginPage() {
       const result = await loginWithAPI(email, password)
       
       if (result.success) {
+        console.log(result)
+
         const next = params.get("next") || "/admin"
         //set auth token in local storage
-        console.log(result)
-        localStorage.setItem("auth_token", result.data.token || "")
         // router.replace(next)
       } else {
         setError(result.message || "Login failed")

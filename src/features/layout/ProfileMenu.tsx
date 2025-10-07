@@ -65,7 +65,7 @@ export default function ProfileMenu() {
             onClick={() => {
               setOpen(false)
               logout()
-              window.location.href = "/login"
+              // window.location.href = "/login"
             }}
           >
             Logout

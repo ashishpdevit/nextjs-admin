@@ -79,9 +79,13 @@ export function login(email: string, password: string): { success: boolean; mess
   return { success: true }
 }
 
-export function logout() {
+export async function logout() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("user")
+    await logoutWithAPI()
+
+    // localStorage.removeItem("user")
+    // localStorage.removeItem("auth_token")
+
   }
   setAuth(false)
   if (typeof document !== "undefined") {
@@ -96,21 +100,22 @@ export async function loginWithAPI(
 {
   try {
     const { axios } = await import("@/lib/axios")
-    const response = await axios.post<{ success: boolean; message?: string; user?: User, token?: string }>("/api/admin/auth/login", {
+    const responseAPI = await axios.post<{ success: boolean; message?: string; data?: { admin?: User, token?: string } }>("/api/admin/auth/login", {
       email,
       password,
     })
-    console.log("87",response)
 
-    if (response.data.success && response.data.user) {
+    const response = responseAPI.data || {}
+    if (response && response.success && response.data?.admin) {
+      console.log("111-admin",response.data?.admin, typeof response.data?.admin)
       if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(response.data.user))
-        localStorage.setItem("auth_token", response.data.token || "")
+        localStorage.setItem("user", JSON.stringify(response.data?.admin))
+        localStorage.setItem("auth_token", response.data?.token || "")
       }
-      setAuth(true, response.data.user)
+      setAuth(true, response.data?.admin)
     }
 
-    return response.data
+    return response
   } catch (error: any) {
     return {
       success: false,
@@ -122,11 +127,22 @@ export async function loginWithAPI(
 export async function logoutWithAPI(): Promise<{ success: boolean }> {
   try {
     const { axios } = await import("@/lib/axios")
-    await axios.post("/admin/auth/logout")
+    const response = await axios.post("/api/admin/auth/logout", {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem("auth_token")}`
+      }
+    })
+    if (response.data && response.data.success) {
+      console.log("139-responseData",response.data)
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("user")
+        localStorage.removeItem("auth_token")
+      }
+    }
   } catch {
     // Continue even if API call fails
   }
 
-  logout()
+  // logout()
   return { success: true }
 }
