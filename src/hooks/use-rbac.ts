@@ -1,7 +1,7 @@
 ﻿"use client"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { getCurrentUser } from "@/lib/auth"
-import { isRouteAllowed, resolveEffectivePermissions } from "@/lib/rbac"
+import { isRouteAllowed, resolveEffectivePermissions, hasPermission as checkPermission } from "@/lib/rbac"
 import {
   deleteAssignment,
   deleteModule,
@@ -101,7 +101,10 @@ export function useRBAC(options: UseRbacOptions = {}): UseRbacResult {
   const role = useMemo(() => {
     const roleId = assignment?.roleId ?? fallbackRoleId
     if (!roleId) return null
-    return roles.find((candidate) => candidate.id === roleId) ?? null
+    
+    // Handle both numeric and string role IDs
+    const numericRoleId = typeof roleId === 'string' ? parseInt(roleId) : roleId
+    return roles.find((candidate) => candidate.id === numericRoleId) ?? null
   }, [assignment, fallbackRoleId, roles])
 
   const effectivePermissions = useMemo(
@@ -110,8 +113,8 @@ export function useRBAC(options: UseRbacOptions = {}): UseRbacResult {
   )
 
   const hasPermission = useCallback(
-    (permission: string) => !!role && (role.permissions.includes("*") || effectivePermissions.includes(permission)),
-    [role, effectivePermissions],
+    (permission: string) => checkPermission(role, permission, permissionsCatalog),
+    [role, permissionsCatalog],
   )
 
   const canAccessRoute = useCallback(
@@ -187,7 +190,7 @@ export function useRBAC(options: UseRbacOptions = {}): UseRbacResult {
     loading,
     role,
     permissions: effectivePermissions,
-    roleId: role?.id ?? null,
+    roleId: role?.id?.toString() ?? null,
     modulesCatalog: modules,
     rolesCatalog: roles,
     permissionsCatalog,

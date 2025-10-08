@@ -55,17 +55,25 @@ export function middleware(req: NextRequest) {
   const isGuestAuth = ["/login", "/signup", "/forgot"].includes(pathname)
   const requiredPermission = matchRoutePermission(pathname)
 
+  // Protect admin routes - redirect to login if not authenticated
   if (isAdminRoute) {
-    const authorized = authed && hasPermission(permissions, requiredPermission)
-    if (!authorized) {
+    if (!authed || !user) {
       const url = req.nextUrl.clone()
       url.pathname = "/login"
       url.searchParams.set("next", pathname)
       return NextResponse.redirect(url)
     }
+    
+    const authorized = hasPermission(permissions, requiredPermission)
+    if (!authorized) {
+      const url = req.nextUrl.clone()
+      url.pathname = "/admin"
+      return NextResponse.redirect(url)
+    }
   }
 
-  if (isGuestAuth && authed && hasPermission(permissions, "dashboard:view")) {
+  // Redirect authenticated users away from guest pages
+  if (isGuestAuth && authed && user) {
     const url = req.nextUrl.clone()
     url.pathname = "/admin"
     return NextResponse.redirect(url)

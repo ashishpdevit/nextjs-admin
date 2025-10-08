@@ -28,16 +28,41 @@ export const DEFAULT_ROUTE_GUARDS: RouteGuard[] = [
 
 export function resolveEffectivePermissions(role: MaybeRole, allPermissions: Permission[]): string[] {
   if (!role) return []
-  if (role.permissions.includes("*")) {
-    return allPermissions.map((permission) => permission.id)
+  
+  // Handle super-admin with empty permissions array (full access)
+  if (role.permissions.length === 0 && (role.key === "super-admin" || role.name === "Super Admin")) {
+    return allPermissions.map((permission) => permission.key)
   }
+  
+  // Handle wildcard permission (legacy support)
+  if (role.permissions.includes("*" as any)) {
+    return allPermissions.map((permission) => permission.key)
+  }
+  
+  // Map numeric permission IDs to permission keys
   return role.permissions
+    .map(permissionId => allPermissions.find(p => p.id === permissionId))
+    .filter(Boolean)
+    .map(permission => permission!.key)
 }
 
-export function hasPermission(role: MaybeRole, permission: string): boolean {
+export function hasPermission(role: MaybeRole, permission: string, allPermissions: Permission[] = []): boolean {
   if (!role) return false
-  if (role.permissions.includes("*")) return true
-  return role.permissions.includes(permission)
+  
+  // Handle super-admin with empty permissions array (full access)
+  if (role.permissions.length === 0 && (role.key === "super-admin" || role.name === "Super Admin")) {
+    return true
+  }
+  
+  if (role.permissions.includes("*" as any)) return true
+  
+  // Check if permission exists in the role's permission IDs
+  const permissionObj = allPermissions.find(p => p.key === permission)
+  if (permissionObj) {
+    return role.permissions.includes(permissionObj.id)
+  }
+  
+  return false
 }
 
 export function matchRoutePermission(pathname: string, guards: RouteGuard[] = DEFAULT_ROUTE_GUARDS): string | undefined {
@@ -61,5 +86,5 @@ export function isRouteAllowed(
 ): boolean {
   const permission = matchRoutePermission(pathname, guards)
   if (!permission) return true
-  return hasPermission(role, permission) || resolveEffectivePermissions(role, allPermissions).includes(permission)
+  return hasPermission(role, permission, allPermissions) || resolveEffectivePermissions(role, allPermissions).includes(permission)
 }

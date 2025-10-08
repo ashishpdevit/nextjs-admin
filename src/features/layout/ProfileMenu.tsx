@@ -62,10 +62,10 @@ export default function ProfileMenu() {
           </Link>
           <button
             className="mt-1 block w-full rounded-sm px-2 py-1.5 text-left text-sm text-destructive hover:bg-muted"
-            onClick={() => {
+            onClick={async () => {
               setOpen(false)
-              logout()
-              // window.location.href = "/login"
+              await logout()
+              window.location.href = "/login"
             }}
           >
             Logout

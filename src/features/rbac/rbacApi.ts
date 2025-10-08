@@ -16,10 +16,36 @@ const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false"
 const STORAGE_KEY = "rbac:snapshot:v1"
 
 const DEFAULT_SNAPSHOT: RBACSnapshot = {
-  modules: (defaults.modules as Module[]).map((module) => ({ ...module, tags: module.tags ? [...module.tags] : [] })),
-  roles: (defaults.roles as Role[]).map((role) => ({ ...role, permissions: [...role.permissions] })),
-  permissions: (defaults.permissions as Permission[]).map((permission) => ({ ...permission })),
-  assignments: (defaults.assignments as RoleAssignment[]).map((assignment) => ({ ...assignment })),
+  modules: (defaults.modules as any[]).map((module) => ({ 
+    ...module, 
+    id: parseInt(module.id) || 1,
+    key: module.key || slugify(module.name),
+    tags: module.tags ? [...module.tags] : [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })),
+  roles: (defaults.roles as any[]).map((role) => ({ 
+    ...role, 
+    id: parseInt(role.id) || 1,
+    key: role.key || slugify(role.name),
+    permissions: role.permissions.map((p: any) => typeof p === 'string' && p === '*' ? p : parseInt(p) || 1),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })),
+  permissions: (defaults.permissions as any[]).map((permission) => ({ 
+    ...permission,
+    id: parseInt(permission.id) || 1,
+    key: permission.key || `${permission.resource}:${permission.action}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })),
+  assignments: (defaults.assignments as any[]).map((assignment) => ({ 
+    ...assignment,
+    id: parseInt(assignment.id) || 1,
+    key: assignment.key,
+    roleId: parseInt(assignment.roleId) || 1,
+    createdAt: new Date().toISOString(),
+  })),
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -82,16 +108,19 @@ function ensureSnapshot(): RBACSnapshot {
   }
 }
 
-function sanitizePermissions(allPermissions: Permission[], requested: string[]): string[] {
-  if (requested.includes("*")) {
-    return ["*"]
+function sanitizePermissions(allPermissions: Permission[], requested: (string | number)[]): number[] {
+  if (requested.includes("*" as any)) {
+    return allPermissions.map(p => p.id) // Return all permission IDs for wildcard
   }
   const allowed = new Set(allPermissions.map((permission) => permission.id))
-  const next = new Set<string>()
+  const next = new Set<number>()
   requested.forEach((permissionId) => {
-    if (allowed.has(permissionId)) next.add(permissionId)
+    const numericId = typeof permissionId === 'string' ? parseInt(permissionId) : permissionId
+    if (!isNaN(numericId) && allowed.has(numericId)) {
+      next.add(numericId)
+    }
   })
-  return Array.from(next).sort()
+  return Array.from(next).sort((a, b) => a - b)
 }
 
 function slugify(value: string) {
@@ -114,7 +143,7 @@ function generateRoleId(name: string) {
   return `${slug || "role"}-${suffix}`
 }
 
-function generateAssignmentId(subjectId: string, roleId: string) {
+function generateAssignmentId(subjectId: string, roleId: string | number) {
   const normalizedSubject = subjectId.replace(/[^a-z0-9]+/gi, "-").toLowerCase()
   return `assign-${normalizedSubject}-${roleId}`
 }
@@ -135,11 +164,20 @@ export async function fetchRbacSnapshotApi(): Promise<RBACSnapshot> {
 
 export async function upsertModuleApi(payload: UpsertModulePayload): Promise<Module> {
   if (!USE_MOCK) {
+    // Prepare the API payload according to backend requirements
+    const apiPayload = {
+      key: payload.key || slugify(payload.name),
+      name: payload.name,
+      description: payload.description,
+      resource: payload.resource,
+      ...(payload.tags && { tags: payload.tags })
+    }
+
     if (payload.id) {
-      const response = await axios.put<{success: boolean, message: string, data: Module}>(`/rbac/modules/${payload.id}`, payload)
+      const response = await axios.put<{success: boolean, message: string, data: Module}>(`/api/rbac/modules/${payload.id}`, apiPayload)
       return response.data.data
     }
-    const response = await axios.post<{success: boolean, message: string, data: Module}>("/rbac/modules", payload)
+    const response = await axios.post<{success: boolean, message: string, data: Module}>("/api/rbac/modules", apiPayload)
     return response.data.data
   }
 
@@ -147,11 +185,14 @@ export async function upsertModuleApi(payload: UpsertModulePayload): Promise<Mod
   const id = payload.id ?? generateModuleId(payload.name, payload.resource)
   const existingIndex = snapshot.modules.findIndex((module) => module.id === id)
   const module: Module = {
-    id,
+    id: typeof id === 'string' ? parseInt(id) || 1 : id,
+    key: payload.key || slugify(payload.name),
     name: payload.name,
     description: payload.description,
     resource: payload.resource,
     tags: payload.tags ? [...payload.tags] : [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 
   if (existingIndex >= 0) {
@@ -164,9 +205,9 @@ export async function upsertModuleApi(payload: UpsertModulePayload): Promise<Mod
   return { ...module, tags: module.tags ? [...module.tags] : [] }
 }
 
-export async function deleteModuleApi(moduleId: string): Promise<void> {
+export async function deleteModuleApi(moduleId: string | number): Promise<void> {
   if (!USE_MOCK) {
-    await axios.delete(`/rbac/modules/${moduleId}`)
+    await axios.delete(`/api/rbac/modules/${moduleId}`)
     return
   }
 
@@ -195,39 +236,53 @@ export async function deleteModuleApi(moduleId: string): Promise<void> {
 
 export async function upsertPermissionApi(payload: UpsertPermissionPayload): Promise<Permission> {
   if (!USE_MOCK) {
+    // Prepare the API payload according to backend requirements
+    const apiPayload = {
+      key: payload.key || `${payload.resource}:${payload.action}`,
+      name: payload.name,
+      description: payload.description,
+      resource: payload.resource,
+      action: payload.action,
+      ...(payload.moduleId && { moduleId: payload.moduleId })
+    }
+
     if (payload.id) {
-      const response = await axios.put<{success: boolean, message: string, data: Permission}>(`/rbac/permissions/${payload.id}`, payload)
+      const response = await axios.put<{success: boolean, message: string, data: Permission}>(`/api/rbac/permissions/${payload.id}`, apiPayload)
       return response.data.data
     }
-    const response = await axios.post<{success: boolean, message: string, data: Permission}>("/rbac/permissions", payload)
+    const response = await axios.post<{success: boolean, message: string, data: Permission}>("/api/rbac/permissions", apiPayload)
     return response.data.data
   }
 
   const snapshot = ensureSnapshot()
   const id = payload.id ?? computePermissionId(payload.resource, payload.action)
   const permission: Permission = {
-    id,
+    id: typeof id === 'string' ? parseInt(id) || 1 : id,
+    key: payload.key || `${payload.resource}:${payload.action}`,
     name: payload.name,
     description: payload.description,
     resource: payload.resource,
     action: payload.action,
+    moduleId: payload.moduleId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 
-  const existingIndex = snapshot.permissions.findIndex((candidate) => candidate.id === id)
+  const existingIndex = snapshot.permissions.findIndex((candidate) => candidate.id === (typeof id === 'string' ? parseInt(id) : id))
   if (existingIndex >= 0) {
     snapshot.permissions[existingIndex] = permission
   } else {
     snapshot.permissions.push(permission)
-    snapshot.permissions.sort((a, b) => a.id.localeCompare(b.id))
+    snapshot.permissions.sort((a, b) => a.id - b.id)
   }
 
   persistSnapshot(snapshot)
   return { ...permission }
 }
 
-export async function deletePermissionApi(permissionId: string): Promise<void> {
+export async function deletePermissionApi(permissionId: string | number): Promise<void> {
   if (!USE_MOCK) {
-    await axios.delete(`/rbac/permissions/${permissionId}`)
+    await axios.delete(`/api/rbac/permissions/${permissionId}`)
     return
   }
 
@@ -237,10 +292,11 @@ export async function deletePermissionApi(permissionId: string): Promise<void> {
     throw new Error("Permission not found")
   }
 
-  snapshot.permissions = snapshot.permissions.filter((permission) => permission.id !== permissionId)
+  const numericPermissionId = typeof permissionId === 'string' ? parseInt(permissionId) : permissionId
+  snapshot.permissions = snapshot.permissions.filter((permission) => permission.id !== numericPermissionId)
   snapshot.roles.forEach((role) => {
-    if (role.permissions.includes(permissionId)) {
-      role.permissions = role.permissions.filter((id) => id !== permissionId)
+    if (role.permissions.includes(numericPermissionId)) {
+      role.permissions = role.permissions.filter((id) => id !== numericPermissionId)
     }
   })
 
@@ -249,18 +305,27 @@ export async function deletePermissionApi(permissionId: string): Promise<void> {
 
 export async function upsertRoleApi(payload: UpsertRolePayload): Promise<Role> {
   if (!USE_MOCK) {
+    // Prepare the API payload according to backend requirements
+    const apiPayload = {
+      key: payload.key || slugify(payload.name),
+      name: payload.name,
+      description: payload.description,
+      isSystem: payload.isSystem || false,
+      permissions: payload.permissions.map(p => typeof p === 'string' ? parseInt(p) : p)
+    }
+
     if (payload.id) {
-      const response = await axios.put<{success: boolean, message: string, data: Role}>(`/rbac/roles/${payload.id}`, payload)
+      const response = await axios.put<{success: boolean, message: string, data: Role}>(`/api/rbac/roles/${payload.id}`, apiPayload)
       return response.data.data
     }
-    const response = await axios.post<{success: boolean, message: string, data: Role}>("/rbac/roles", payload)
+    const response = await axios.post<{success: boolean, message: string, data: Role}>("/api/rbac/roles", apiPayload)
     return response.data.data
   }
 
   const snapshot = ensureSnapshot()
   const permissions = sanitizePermissions(snapshot.permissions, payload.permissions)
   const targetId = payload.id ?? generateRoleId(payload.name)
-  const existingIndex = snapshot.roles.findIndex((role) => role.id === targetId)
+  const existingIndex = snapshot.roles.findIndex((role) => role.id === (typeof targetId === 'string' ? parseInt(targetId) : targetId))
 
   if (existingIndex >= 0) {
     const existing = snapshot.roles[existingIndex]
@@ -270,6 +335,7 @@ export async function upsertRoleApi(payload: UpsertRolePayload): Promise<Role> {
       description: payload.description,
       permissions,
       isSystem: existing.isSystem,
+      updatedAt: new Date().toISOString(),
     }
     snapshot.roles[existingIndex] = updated
     persistSnapshot(snapshot)
@@ -277,20 +343,23 @@ export async function upsertRoleApi(payload: UpsertRolePayload): Promise<Role> {
   }
 
   const created: Role = {
-    id: targetId,
+    id: typeof targetId === 'string' ? parseInt(targetId) || 1 : targetId,
+    key: payload.key || slugify(payload.name),
     name: payload.name,
     description: payload.description,
     permissions,
     isSystem: payload.isSystem ?? false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
   snapshot.roles.push(created)
   persistSnapshot(snapshot)
   return { ...created, permissions: [...created.permissions] }
 }
 
-export async function deleteRoleApi(roleId: string): Promise<void> {
+export async function deleteRoleApi(roleId: string | number): Promise<void> {
   if (!USE_MOCK) {
-    await axios.delete(`/rbac/roles/${roleId}`)
+    await axios.delete(`/api/rbac/roles/${roleId}`)
     return
   }
 
@@ -310,11 +379,19 @@ export async function deleteRoleApi(roleId: string): Promise<void> {
 
 export async function upsertAssignmentApi(payload: UpsertAssignmentPayload): Promise<RoleAssignment> {
   if (!USE_MOCK) {
+    // Prepare the API payload according to backend requirements
+    const apiPayload = {
+      key: payload.key,
+      subjectId: payload.subjectId,
+      subjectType: payload.subjectType,
+      roleId: typeof payload.roleId === 'string' ? parseInt(payload.roleId) : payload.roleId
+    }
+
     if (payload.id) {
-      const response = await axios.put<{success: boolean, message: string, data: RoleAssignment}>(`/rbac/assignments/${payload.id}`, payload)
+      const response = await axios.put<{success: boolean, message: string, data: RoleAssignment}>(`/api/rbac/assignments/${payload.id}`, apiPayload)
       return response.data.data
     }
-    const response = await axios.post<{success: boolean, message: string, data: RoleAssignment}>("/rbac/assignments", payload)
+    const response = await axios.post<{success: boolean, message: string, data: RoleAssignment}>("/api/rbac/assignments", apiPayload)
     return response.data.data
   }
 
@@ -325,10 +402,12 @@ export async function upsertAssignmentApi(payload: UpsertAssignmentPayload): Pro
   }
 
   const nextAssignment: RoleAssignment = {
-    id: payload.id ?? generateAssignmentId(payload.subjectId, payload.roleId),
+    id: typeof payload.id === 'string' ? parseInt(payload.id) || 1 : (payload.id ?? 1),
+    key: payload.key,
     subjectId: payload.subjectId,
     subjectType: payload.subjectType,
-    roleId: payload.roleId,
+    roleId: typeof payload.roleId === 'string' ? parseInt(payload.roleId) : payload.roleId,
+    createdAt: new Date().toISOString(),
   }
 
   if (!payload.id) {
@@ -354,9 +433,9 @@ export async function upsertAssignmentApi(payload: UpsertAssignmentPayload): Pro
   return { ...nextAssignment }
 }
 
-export async function deleteAssignmentApi(assignmentId: string): Promise<void> {
+export async function deleteAssignmentApi(assignmentId: string | number): Promise<void> {
   if (!USE_MOCK) {
-    await axios.delete(`/rbac/assignments/${assignmentId}`)
+    await axios.delete(`/api/rbac/assignments/${assignmentId}`)
     return
   }
 
@@ -371,7 +450,7 @@ export async function deleteAssignmentApi(assignmentId: string): Promise<void> {
 
 export async function resetRbacSnapshotApi(): Promise<RBACSnapshot> {
   if (!USE_MOCK) {
-    const response = await axios.post<{success: boolean, message: string, data: RBACSnapshot}>("/rbac/reset", {})
+    const response = await axios.post<{success: boolean, message: string, data: RBACSnapshot}>("/api/rbac/reset", {})
     return response.data.data
   }
 

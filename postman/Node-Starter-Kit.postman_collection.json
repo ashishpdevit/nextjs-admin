@@ -13,7 +13,12 @@
           "name": "Root Welcome",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/",
               "host": [
@@ -27,7 +32,12 @@
           "name": "Health Check",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/health",
               "host": [
@@ -44,7 +54,12 @@
           "name": "List Examples",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/examples",
               "host": [
@@ -65,6 +80,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
               }
             ],
             "body": {
@@ -92,7 +111,12 @@
           "name": "RBAC Snapshot",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/rbac",
               "host": [
@@ -106,36 +130,658 @@
           }
         },
         {
-          "name": "Create RBAC Assignment",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"subjectId\": \"qa@example.com\",\n  \"subjectType\": \"user\",\n  \"roleId\": \"support\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+          "name": "RBAC Modules",
+          "item": [
+            {
+              "name": "List RBAC Modules",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/modules",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "modules"
+                  ]
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/rbac/assignments",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "rbac",
-                "assignments"
-              ]
+            {
+              "name": "Get RBAC Module",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/modules/{{moduleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "modules",
+                    "{{moduleId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create RBAC Module",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"test-module\",\n  \"name\": \"Test Module\",\n  \"description\": \"A test module for RBAC\",\n  \"resource\": \"test\",\n  \"tags\": [\"test\", \"rbac\"]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/modules",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "modules"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update RBAC Module",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Test Module\",\n  \"description\": \"An updated test module for RBAC\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/modules/{{moduleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "modules",
+                    "{{moduleId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete RBAC Module",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/modules/{{moduleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "modules",
+                    "{{moduleId}}"
+                  ]
+                }
+              }
             }
-          }
+          ]
+        },
+        {
+          "name": "RBAC Permissions",
+          "item": [
+            {
+              "name": "List RBAC Permissions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/permissions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "permissions"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get RBAC Permission",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/permissions/{{permissionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "permissions",
+                    "{{permissionId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create RBAC Permission",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"test:permission\",\n  \"name\": \"Test Permission\",\n  \"description\": \"A test permission for RBAC\",\n  \"resource\": \"test\",\n  \"action\": \"permission\",\n  \"moduleId\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/permissions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "permissions"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update RBAC Permission",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Test Permission\",\n  \"description\": \"An updated test permission for RBAC\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/permissions/{{permissionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "permissions",
+                    "{{permissionId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete RBAC Permission",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/permissions/{{permissionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "permissions",
+                    "{{permissionId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "RBAC Roles",
+          "item": [
+            {
+              "name": "List RBAC Roles",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/roles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "roles"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "List RBAC Roles (System Only)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/roles?system=true",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "roles"
+                  ],
+                  "query": [
+                    {
+                      "key": "system",
+                      "value": "true"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get RBAC Role",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/roles/{{roleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "roles",
+                    "{{roleId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create RBAC Role",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"test-role\",\n  \"name\": \"Test Role\",\n  \"description\": \"A test role for RBAC\",\n  \"isSystem\": false,\n  \"permissions\": [1, 2, 3]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/roles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "roles"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update RBAC Role",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Test Role\",\n  \"description\": \"An updated test role for RBAC\",\n  \"permissions\": [1, 2, 3, 4]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/roles/{{roleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "roles",
+                    "{{roleId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete RBAC Role",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/roles/{{roleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "roles",
+                    "{{roleId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "RBAC Assignments",
+          "item": [
+            {
+              "name": "List RBAC Assignments",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/assignments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "assignments"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "List RBAC Assignments by Subject",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/assignments?subjectId=admin@yopmail.com",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "assignments"
+                  ],
+                  "query": [
+                    {
+                      "key": "subjectId",
+                      "value": "admin@yopmail.com"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get RBAC Assignment",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/assignments/{{assignmentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "assignments",
+                    "{{assignmentId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create RBAC Assignment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"assign-test-user\",\n  \"subjectId\": \"test@example.com\",\n  \"subjectType\": \"user\",\n  \"roleId\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/assignments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "assignments"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update RBAC Assignment",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subjectId\": \"updated@example.com\",\n  \"roleId\": 2\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/assignments/{{assignmentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "assignments",
+                    "{{assignmentId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete RBAC Assignment",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rbac/assignments/{{assignmentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rbac",
+                    "assignments",
+                    "{{assignmentId}}"
+                  ]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -153,6 +799,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -179,6 +829,54 @@
               }
             },
             {
+              "name": "Forgot Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/forgot-password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "forgot-password"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Reset Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/reset-password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "reset-password"
+                  ]
+                }
+              }
+            },
+            {
               "name": "Profile",
               "request": {
                 "method": "GET",
@@ -186,6 +884,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -201,11 +903,67 @@
                   ]
                 }
               }
+            },
+            {
+              "name": "Dashboard Overview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/dashboard/overview",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "dashboard",
+                    "overview"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Admin Logout",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "logout"
+                  ]
+                }
+              }
             }
           ]
         },
         {
-          "name": "Users",
+          "name": "AdminUsers",
           "item": [
             {
               "name": "List Admins",
@@ -215,6 +973,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -238,6 +1000,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -266,6 +1032,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -293,6 +1063,161 @@
           ]
         },
         {
+          "name": "App Users",
+          "item": [
+            {
+              "name": "List Customers",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/customers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "customers"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "Active"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Customer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+1234567890\",\n  \"status\": \"Active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/customers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "customers"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Customer",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/customers/{{customerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "customers",
+                    "{{customerId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update Customer",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"email\": \"john.updated@example.com\",\n  \"phone\": \"+1234567890\",\n  \"status\": \"Active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/customers/{{customerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "customers",
+                    "{{customerId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete Customer",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/customers/{{customerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "customers",
+                    "{{customerId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "Products",
           "item": [
             {
@@ -307,6 +1232,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -339,6 +1268,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -362,6 +1295,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -424,6 +1361,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -456,6 +1397,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -484,6 +1429,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -511,6 +1460,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -549,6 +1502,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -577,6 +1534,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -615,6 +1576,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -638,6 +1603,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{adminToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -666,6 +1635,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -703,6 +1676,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -741,6 +1718,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -831,7 +1812,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"{{appUserEmail}}\",\n  \"password\": \"{{appUserPassword}}\",\n  \"name\": \"Mobile Tester\",\n  \"deviceToken\": \"{{deviceToken}}\",\n  \"notificationsEnabled\": true,\n  \"locale\": \"en\"\n}",
+                  "raw": "{\n  \"email\": \"{{appUserEmail}}\",\n  \"password\": \"{{appUserPassword}}\",\n  \"name\": \"Mobile Tester\",\n  \"device_token\": \"{{deviceToken}}\",\n  \"notificationsEnabled\": true,\n  \"locale\": \"en\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -868,7 +1849,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"{{appUserEmail}}\",\n  \"password\": \"{{appUserPassword}}\",\n  \"deviceToken\": \"{{deviceToken}}\",\n  \"notificationsEnabled\": true,\n  \"locale\": \"en\"\n}",
+                  "raw": "{\n  \"email\": \"{{appUserEmail}}\",\n  \"password\": \"{{appUserPassword}}\",\n  \"device_token\": \"{{deviceToken}}\",\n  \"notifications_enabled\": true,\n  \"locale\": \"en\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -937,7 +1918,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+1234567890\",\n  \"deviceToken\": \"{{deviceToken}}\",\n  \"notificationsEnabled\": true,\n  \"locale\": \"en\"\n}",
+                  "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+1234567890\",\n  \"device_token\": \"{{deviceToken}}\",\n  \"notifications_enabled\": true,\n  \"locale\": \"en\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1069,7 +2050,12 @@
               "name": "List Products",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/products",
                   "host": [
@@ -1087,7 +2073,12 @@
               "name": "Get Product",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/products/{{productId}}",
                   "host": [
@@ -1111,7 +2102,12 @@
               "name": "List FAQs",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/faqs",
                   "host": [
@@ -1129,7 +2125,12 @@
               "name": "Get FAQ",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/faqs/{{faqId}}",
                   "host": [
@@ -1147,145 +2148,18 @@
           ]
         },
         {
-          "name": "Customers",
-          "item": [
-            {
-              "name": "List Customers",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/app/customers",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "app",
-                    "customers"
-                  ],
-                  "query": [
-                    {
-                      "key": "status",
-                      "value": "Active"
-                    }
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Create Customer",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+1234567890\",\n  \"status\": \"Active\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/app/customers",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "app",
-                    "customers"
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Get Customer",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/app/customers/{{customerId}}",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "app",
-                    "customers",
-                    "{{customerId}}"
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Update Customer",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"email\": \"john.updated@example.com\",\n  \"phone\": \"+1234567890\",\n  \"status\": \"Active\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/app/customers/{{customerId}}",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "app",
-                    "customers",
-                    "{{customerId}}"
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Delete Customer",
-              "request": {
-                "method": "DELETE",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/app/customers/{{customerId}}",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "app",
-                    "customers",
-                    "{{customerId}}"
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        {
           "name": "Orders",
           "item": [
             {
               "name": "List Orders",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/orders",
                   "host": [
@@ -1307,6 +2181,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -1335,7 +2213,12 @@
               "name": "Get Order",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/orders/{{orderId}}",
                   "host": [
@@ -1358,6 +2241,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -1387,7 +2274,12 @@
               "name": "Delete Order",
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/orders/{{orderId}}",
                   "host": [
@@ -1411,7 +2303,12 @@
               "name": "List Contact Requests",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/contact-requests",
                   "host": [
@@ -1433,6 +2330,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -1461,7 +2362,12 @@
               "name": "Get Contact Request",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/app/contact-requests/{{contactRequestId}}",
                   "host": [
@@ -1489,6 +2395,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{appAuthToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -1512,6 +2422,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{appAuthToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -1540,6 +2454,10 @@
                   {
                     "key": "Content-Type",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "body": {
@@ -1575,6 +2493,10 @@
                   {
                     "key": "Authorization",
                     "value": "Bearer {{appAuthToken}}"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}"
                   }
                 ],
                 "url": {
@@ -1623,7 +2545,7 @@
     },
     {
       "key": "appUserEmail",
-      "value": "mobile-user@example.com"
+      "value": "mobile-user@yopmail.com"
     },
     {
       "key": "appUserPassword",
@@ -1639,7 +2561,7 @@
     },
     {
       "key": "deviceToken",
-      "value": "test-device-token-123"
+      "value": "d7SS3nq_Wk0Lumw6EWpA_u:APA91bFWwtWmy3kVc6AN8YhAyeMPjccsWXwMLmaW4Nm7uawHyhcl52Bbe8tD5VwPwOxt-6Sn1OUwoqWKYmvm1AzSBAHpgpZb-iesahraiu1dWrhP933SUNw"
     },
     {
       "key": "customerId",
@@ -1663,6 +2585,22 @@
     },
     {
       "key": "faqId",
+      "value": "1"
+    },
+    {
+      "key": "moduleId",
+      "value": "1"
+    },
+    {
+      "key": "permissionId",
+      "value": "1"
+    },
+    {
+      "key": "roleId",
+      "value": "1"
+    },
+    {
+      "key": "assignmentId",
       "value": "1"
     }
   ]

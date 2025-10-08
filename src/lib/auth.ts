@@ -23,9 +23,15 @@ const DEV_CREDENTIALS = {
 
 export function setAuth(auth: boolean, user?: User) {
   const maxAge = auth ? 60 * 60 * 24 * 7 : 0 // 7 days
-  document.cookie = `auth=${auth ? "1" : ""}; Path=/; Max-Age=${maxAge}`
+  const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+  const secureFlag = isSecure ? '; Secure' : ''
+  
+  document.cookie = `auth=${auth ? "1" : ""}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secureFlag}`
   if (user) {
-    document.cookie = `user=${encodeURIComponent(JSON.stringify(user))}; Path=/; Max-Age=${maxAge}`
+    document.cookie = `user=${encodeURIComponent(JSON.stringify(user))}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secureFlag}`
+  } else if (!auth) {
+    // Clear user cookie on logout
+    document.cookie = `user=; Path=/; Max-Age=0; SameSite=Lax${secureFlag}`
   }
 }
 
@@ -82,15 +88,12 @@ export function login(email: string, password: string): { success: boolean; mess
 export async function logout() {
   if (typeof window !== "undefined") {
     await logoutWithAPI()
-
-    // localStorage.removeItem("user")
-    // localStorage.removeItem("auth_token")
-
+    localStorage.removeItem("user")
+    localStorage.removeItem("auth_token")
   }
+  
+  // Clear all auth cookies
   setAuth(false)
-  if (typeof document !== "undefined") {
-    document.cookie = "user=; Path=/; Max-Age=0"
-  }
 }
 
 export async function loginWithAPI(

@@ -36,17 +36,9 @@ export default function LoginPage() {
       const result = await loginWithAPI(email, password)
       
       if (result.success) {
-        console.log(result)
-
         const next = params.get("next") || "/admin"
-        //set auth token in local storage
-        // router.replace(next)
-      } else {
-        setError(result.message || "Login failed")
-      }
-      if (result.success) {
-        const next = params.get("next") || "/admin"
-        router.replace(next)
+        // Use window.location for full page reload to ensure all state is refreshed
+        window.location.href = next
       } else {
         setError(result.message || "Login failed")
       }

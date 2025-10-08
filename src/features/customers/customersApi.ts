@@ -108,21 +108,21 @@ export async function fetchCustomersApi(params?: CustomersParams): Promise<Custo
         createdAt: c.createdAt || new Date().toISOString(),
       })),
       links: {
-        first: page > 1 ? `/api/app/customers?page=1&limit=${limit}` : null,
-        last: page < lastPage ? `/api/app/customers?page=${lastPage}&limit=${limit}` : null,
-        prev: page > 1 ? `/api/app/customers?page=${page - 1}&limit=${limit}` : null,
-        next: page < lastPage ? `/api/app/customers?page=${page + 1}&limit=${limit}` : null,
+        first: page > 1 ? `/api/admin/customers?page=1&limit=${limit}` : null,
+        last: page < lastPage ? `/api/admin/customers?page=${lastPage}&limit=${limit}` : null,
+        prev: page > 1 ? `/api/admin/customers?page=${page - 1}&limit=${limit}` : null,
+        next: page < lastPage ? `/api/admin/customers?page=${page + 1}&limit=${limit}` : null,
       },
       meta: {
         current_page: page,
         from: startIndex + 1,
         last_page: lastPage,
         links: Array.from({ length: lastPage }, (_, i) => ({
-          url: i + 1 === page ? null : `/api/app/customers?page=${i + 1}&limit=${limit}`,
+          url: i + 1 === page ? null : `/api/admin/customers?page=${i + 1}&limit=${limit}`,
           label: String(i + 1),
           active: i + 1 === page
         })),
-        path: "/api/app/customers",
+        path: "/api/admin/customers",
         per_page: limit,
         to: Math.min(endIndex, total),
         total
@@ -139,7 +139,7 @@ export async function fetchCustomersApi(params?: CustomersParams): Promise<Custo
   if (params?.status && params.status !== 'all') searchParams.set('status', params.status)
   
   const queryString = searchParams.toString()
-  const url = `/api/app/customers${queryString ? `?${queryString}` : ''}`
+  const url = `/api/admin/customers${queryString ? `?${queryString}` : ''}`
   
   const res = await axios.get<CustomersResponse>(url)
   return res.data

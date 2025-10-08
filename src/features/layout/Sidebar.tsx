@@ -55,6 +55,7 @@ function filterNavItems(items: NavItem[], canAccess: (href: string) => boolean, 
     .map((item) => {
       if (!item.href) return item
       if (item.children?.length) {
+        console.log("=====>item",item)
         const visibleChildren = item.children.filter((child) => !child.href || canAccess(child.href))
         if (!visibleChildren.length && !canAccess(item.href)) {
           return null
@@ -70,8 +71,152 @@ export default function Sidebar() {
   const pathname = usePathname()
   const [brand, setBrand] = useState("Company")
   const [open, setOpen] = useState<Record<string, boolean>>({})
-  const { canAccessRoute, loading, roleId } = useRBAC()
-  const nav = useMemo(() => filterNavItems(NAV_ITEMS, canAccessRoute, !loading && !!roleId), [canAccessRoute, loading, roleId])
+  const [isReady, setIsReady] = useState(false)
+  const [userPermissions, setUserPermissions] = useState<string[]>([])
+  const { canAccessRoute, loading, roleId, permissions, rolesCatalog } = useRBAC()
+  
+  // Load user and fetch permissions based on roleId
+  useEffect(() => {
+    const loadPermissions = async () => {
+      try {
+        const stored = localStorage.getItem("user")
+        console.log("Sidebar: Loading user from localStorage:", stored)
+        
+        if (!stored) {
+          console.warn("Sidebar: No user data found in localStorage")
+          return
+        }
+
+        const user = JSON.parse(stored) as { permissions?: string[]; roleId?: string | number; role?: string; email?: string }
+        console.log("Sidebar: Parsed user data:", user)
+        console.log("=====>rolesCatalog",rolesCatalog)
+        // If user has explicit permissions, use them
+        // if (user.permissions && user.permissions.length > 0) {
+        //   console.log("Sidebar: Setting permissions from user data:", user.permissions)
+        //   setUserPermissions(user.permissions)
+        //   setIsReady(true)
+        //   return
+        // }
+        
+        // Check if user is admin/super-admin directly from role
+        if (user.role === "Admin" || user.role === "super-admin") {
+          console.log("Sidebar: Admin role detected directly, granting full access")
+          setUserPermissions(["*"])
+          setIsReady(true)
+          return
+        }
+        
+        // Check if user has super-admin roleId (numeric ID 2 from backend)
+        if (Number(user.roleId) === 2 || user.roleId === "2" || user.role === "Super Admin") {
+          console.log("Sidebar: Super admin roleId detected, granting full access")
+          setUserPermissions(["*"])
+          setIsReady(true)
+          return
+        }
+        
+        // Otherwise, fetch permissions based on roleId
+        const userRoleId = user.role || user.roleId 
+        if (userRoleId) {
+          console.log("Sidebar: Loading permissions for roleId:", userRoleId)
+          
+          // Try to load from RBAC mock data
+          try {
+            const rbacData = await import("@/mocks/rbac.json")
+            const role = rbacData.roles.find((r: any) => r.id == userRoleId)
+            console.log("=====>rbacData",rbacData.roles)
+            console.log("=====>role",role)
+
+            if (role) {
+              console.log("Sidebar: Found role:", role)
+              
+              // Handle super-admin role specifically
+              if (userRoleId === "super-admin" || userRoleId === "Admin" || Number(userRoleId) === 2 || userRoleId === "2") {
+                console.log("Sidebar: Super admin detected, granting full access")
+                setUserPermissions(["*"])
+                setIsReady(true)
+              } else if (role.permissions && role.permissions.length > 0) {
+                console.log("Sidebar: Found role permissions:", role.permissions)
+                setUserPermissions(role.permissions)
+                setIsReady(true)
+              } else {
+                console.warn("Sidebar: Role found but no permissions, using default access")
+                setUserPermissions(["dashboard:view"])
+                setIsReady(true)
+              }
+            } else {
+              console.warn("Sidebar: Role not found in RBAC data, using default access")
+              setUserPermissions(["dashboard:view"])
+              setIsReady(true)
+            }
+          } catch (error) {
+            console.error("Sidebar: Failed to load RBAC data:", error)
+            // Fallback: give basic dashboard access
+            setUserPermissions(["dashboard:view"])
+            setIsReady(true)
+          }
+        } else {
+          console.warn("Sidebar: No roleId or role found in user data")
+        }
+      } catch (error) {
+        console.error("Sidebar: Failed to load user permissions:", error)
+      }
+    }
+
+    loadPermissions()
+  }, [])
+  
+  // Update when RBAC loads from Redux (for dynamic permission updates)
+  useEffect(() => {
+    if (!loading && permissions.length > 0) {
+      console.log("Sidebar: Updating permissions from RBAC hook:", permissions)
+      setUserPermissions(permissions)
+      setIsReady(true)
+    } else if (!loading && roleId && rolesCatalog.length > 0) {
+      // Try to get permissions from rolesCatalog
+      console.log("=====>rolesCatalog",rolesCatalog, roleId)
+      const role = rolesCatalog.find(r => r.id === Number(roleId))
+      console.log("145-role",role)
+      
+      if (role) {
+        // Handle super-admin role specifically
+        if (roleId === "super-admin" || roleId === "Admin" || roleId === "2" || Number(roleId) === 2) {
+          console.log("Sidebar: Super admin detected from rolesCatalog, granting full access")
+          setUserPermissions(["*"])
+          setIsReady(true)
+        } else if (role.permissions && role.permissions.length > 0) {
+          console.log("Sidebar: Updating permissions from rolesCatalog:", role.permissions)
+          // Convert numeric permission IDs to permission keys (this would need permission catalog)
+          // For now, just grant full access since we don't have the mapping here
+          setUserPermissions(["*"])
+          setIsReady(true)
+        } else {
+          console.warn("Sidebar: Role found in rolesCatalog but no permissions, using default")
+          setUserPermissions(["dashboard:view"])
+          setIsReady(true)
+        }
+      }
+    }
+  }, [loading, permissions, roleId, rolesCatalog])
+  
+  // Show all menu items if user has super admin permissions (*), otherwise filter
+  const nav = useMemo(() => {
+    console.log("Sidebar: Computing nav items. isReady:", isReady, "userPermissions:", userPermissions, "loading:", loading, "roleId:", roleId)
+    
+    if (!isReady) {
+      console.log("Sidebar: Not ready yet, returning empty nav")
+      return []
+    }
+    
+    if (userPermissions.includes("*")) {
+      console.log("Sidebar: User has wildcard permission, showing all", NAV_ITEMS.length, "menu items")
+      return NAV_ITEMS
+    }
+    
+    console.log("Sidebar: Filtering nav items based on permissions")
+    const filtered = filterNavItems(NAV_ITEMS, canAccessRoute, !loading && !!roleId)
+    console.log("Sidebar: Filtered nav items:", filtered.length, "items")
+    return filtered
+  }, [canAccessRoute, loading, roleId, userPermissions, isReady])
 
   useEffect(() => {
     const load = () => {
@@ -100,8 +245,15 @@ export default function Sidebar() {
         <span className="text-base font-semibold tracking-tight">{brand}</span>
       </div>
       <div className="p-3">
-        <nav className="space-y-0.5">
-          {nav.map((item) => {
+        {!isReady ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-8 w-full animate-pulse rounded-md bg-muted/50" />
+            ))}
+          </div>
+        ) : (
+          <nav className="space-y-0.5">
+            {nav.map((item) => {
             const Icon = item.icon
             const hasChildren = !!item.children?.length
             if (!hasChildren) {
@@ -172,7 +324,8 @@ export default function Sidebar() {
               </div>
             )
           })}
-        </nav>
+          </nav>
+        )}
       </div>
     </aside>
   )

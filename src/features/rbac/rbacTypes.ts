@@ -1,32 +1,44 @@
 ﻿export type Permission = {
-  id: string
+  id: number
+  key: string
   name: string
   description?: string
   resource: string
   action: string
+  moduleId?: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type Module = {
-  id: string
+  id: number
+  key: string
   name: string
   description?: string
   resource: string
   tags?: string[]
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type Role = {
-  id: string
+  id: number
+  key: string
   name: string
   description?: string
-  permissions: string[]
+  permissions: number[]  // Array of permission IDs
   isSystem?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type RoleAssignment = {
-  id: string
+  id: number
+  key?: string
   subjectId: string
   subjectType: "user" | "service" | "api-key"
-  roleId: string
+  roleId: number  // Numeric role ID
+  createdAt?: string
 }
 
 export type RBACSnapshot = {
@@ -36,10 +48,25 @@ export type RBACSnapshot = {
   modules: Module[]
 }
 
-export type UpsertRolePayload = Omit<Role, "id"> & { id?: string }
+export type UpsertRolePayload = Omit<Role, "id" | "createdAt" | "updatedAt"> & { 
+  id?: string | number
+  key?: string
+  permissions: (string | number)[]
+}
 
-export type UpsertAssignmentPayload = Omit<RoleAssignment, "id"> & { id?: string }
+export type UpsertAssignmentPayload = Omit<RoleAssignment, "id" | "createdAt"> & { 
+  id?: string | number
+  key?: string
+  roleId: string | number
+}
 
-export type UpsertModulePayload = Omit<Module, "id"> & { id?: string }
+export type UpsertModulePayload = Omit<Module, "id" | "createdAt" | "updatedAt"> & { 
+  id?: string | number
+  key?: string
+}
 
-export type UpsertPermissionPayload = Omit<Permission, "id"> & { id?: string }
+export type UpsertPermissionPayload = Omit<Permission, "id" | "createdAt" | "updatedAt"> & { 
+  id?: string | number
+  key?: string
+  moduleId?: number
+}
