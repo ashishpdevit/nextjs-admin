@@ -21,6 +21,47 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchCustomers, selectCustomers, selectCustomersLoading, toggleStatus, removeCustomer, createCustomer, updateCustomer } from "@/store/customers"
 import { selectCustomersPagination, selectCustomersLinks } from "@/features/customers/customersSlice"
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"  
+import { getProxiedImageUrl } from "@/lib/utils"
+
+// Customer Avatar Component with error handling
+function CustomerAvatar({ customer }: { customer: any }) {
+  const [imageError, setImageError] = useState(false)
+  
+  // Check for profilePicture first, then fallback to image
+  const originalUrl = (customer?.profilePicture as any)?.url || customer?.profilePicture?.url || customer?.image
+  const imageUrl = getProxiedImageUrl(originalUrl)
+
+  // Reset error when customer or image URL changes
+  useEffect(() => {
+    setImageError(false)
+  }, [customer?.id, imageUrl])
+
+  if (!imageUrl || imageError) {
+    return (
+      <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+        <span className="text-xs font-medium">{customer?.name?.charAt(0) || '?'}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+      <img 
+        key={`avatar-${customer?.id}-${imageUrl}`}
+        src={imageUrl} 
+        alt={customer?.name || 'Customer'}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          console.error('Avatar image load error for customer:', customer?.id, 'URL:', imageUrl)
+          setImageError(true)
+        }}
+        onLoad={() => {
+          console.log('Avatar image loaded successfully for customer:', customer?.id)
+        }}
+      />
+    </div>
+  )
+}
 
 export default function CustomersPage() {
   const router = useRouter()
@@ -225,9 +266,7 @@ export default function CustomersPage() {
                 <TableCell className="text-right">{c.id}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium">{c.name.charAt(0)}</span>
-                    </div>
+                    <CustomerAvatar customer={c} />
                     <div>
                       <div className="font-medium">{c.name}</div>
                       <div className="text-sm text-muted-foreground">{c.phone}</div>

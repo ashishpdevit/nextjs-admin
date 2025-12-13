@@ -12,6 +12,7 @@ import { exportCsv } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchAppMenuLinks, saveAppMenuLink, selectAppMenuLinks, selectAppMenuLinksLoading } from "@/store/appMenuLinks"
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
+import { toast } from "sonner"
 
 export default function AppMenuLinksPage() {
   const [q, setQ] = useState("")
@@ -170,7 +171,7 @@ export default function AppMenuLinksPage() {
                     title="Copy link"
                     onClick={() => {
                       const url = new URL(l.link, location.origin).toString()
-                      navigator.clipboard.writeText(url).then(() => alert("Link copied!"))
+                      navigator.clipboard.writeText(url).then(() => toast.success("Link copied to clipboard"))
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 15L7 17a5 5 0 0 1-7-7l2-2" /><path d="M15 9l2-2a5 5 0 1 1 7 7l-2 2" /><path d="M8 12l8-8" /></svg>

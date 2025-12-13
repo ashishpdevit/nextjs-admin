@@ -1,6 +1,28 @@
 import { axios } from "@/lib/axios"
 import mockProducts from "@/mocks/products.json"
 
+export type Media = {
+  id: string
+  uuid: string
+  fileName: string
+  name: string
+  url: string
+  path: string
+  mimeType: string
+  size: string
+  disk: string
+  modelType: string
+  modelId: string
+  collectionName: string
+  orderColumn: number
+  customProperties: Record<string, any>
+  manipulations: Record<string, any>
+  generatedConversions: Record<string, any>
+  responsiveImages: Record<string, any>
+  createdAt: string
+  updatedAt: string
+}
+
 export type Product = {
   id: number
   name: string
@@ -10,13 +32,19 @@ export type Product = {
   category: string
   sku: string
   description: string
-  image: string
-  brand: string
-  barcode: string
+  image?: string
+  brand?: string | null
+  barcode?: string | null
   featured: boolean
-  images: string[]
-  tags: string[]
-  variants: any[]
+  images?: string[] | number[]
+  tags?: string[]
+  variants?: any[]
+  media?: Media[]
+  dimensions?: any | null
+  shipping?: any | null
+  seo?: any | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type PaginationLinks = {
@@ -160,25 +188,38 @@ export async function fetchProductsApi(params?: ProductsParams): Promise<Product
   return res.data
 }
 
-export async function createProductApi(payload: Omit<Product, "id">): Promise<Product> {
+export async function createProductApi(payload: FormData | Omit<Product, "id">): Promise<Product> {
   if (USE_MOCK) {
     const response = await fetchProductsApi()
     const nextId = (response.data.reduce((m, p) => Math.max(m, p.id), 0) || 0) + 1
+    const payloadData = payload instanceof FormData ? Object.fromEntries(payload) : payload
     const created: Product = { 
       id: nextId, 
-      ...payload, 
+      ...(payloadData as any), 
     }
     return created
   }
-  const res = await axios.post<{success: boolean, message: string, data: Product}>("/api/admin/products", payload)
+  
+  const config = payload instanceof FormData 
+    ? { headers: { 'Content-Type': 'multipart/form-data' } }
+    : { headers: { 'Content-Type': 'application/json' } }
+  
+  const res = await axios.post<{success: boolean, message: string, data: Product}>("/api/admin/products", payload, config)
   return res.data.data
 }
 
-export async function updateProductApi(payload: Product): Promise<Product> {
+export async function updateProductApi(payload: FormData | Product): Promise<Product> {
   if (USE_MOCK) {
-    return payload
+    const payloadData = payload instanceof FormData ? Object.fromEntries(payload) : payload
+    return payloadData as Product
   }
-  const res = await axios.put<{success: boolean, message: string, data: Product}>(`/api/admin/products/${payload.id}`, payload)
+  
+  const id = payload instanceof FormData ? payload.get('id') : payload.id
+  const config = payload instanceof FormData 
+    ? { headers: { 'Content-Type': 'multipart/form-data' } }
+    : { headers: { 'Content-Type': 'application/json' } }
+  
+  const res = await axios.put<{success: boolean, message: string, data: Product}>(`/api/admin/products/${id}`, payload, config)
   return res.data.data
 }
 

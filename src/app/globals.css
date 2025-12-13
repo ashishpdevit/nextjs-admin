@@ -3,7 +3,7 @@
 
 /* 👇 Add this */
 body {
-  @apply bg-[#f7f7f7] text-gray-900;
+  @apply bg-background text-foreground;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -86,22 +86,22 @@ body {
 
 .dark {
   --background: oklch(0.19 0.03 257);
-  --foreground: oklch(0.95 0.01 247.8);
+  --foreground: oklch(0.98 0.01 247.8); /* Brighter for better readability */
   --card: oklch(0.23 0.03 257);
-  --card-foreground: oklch(0.97 0.01 247.8);
+  --card-foreground: oklch(0.98 0.01 247.8); /* Brighter text on cards */
   --popover: oklch(0.23 0.03 257);
-  --popover-foreground: oklch(0.97 0.01 247.8);
+  --popover-foreground: oklch(0.98 0.01 247.8);
   --primary: oklch(0.7 0.18 275); /* slightly lighter in dark */
   --primary-foreground: oklch(0.12 0.03 257);
   --secondary: oklch(0.28 0.02 257);
-  --secondary-foreground: oklch(0.97 0.01 247.8);
+  --secondary-foreground: oklch(0.98 0.01 247.8); /* Brighter secondary text */
   --muted: oklch(0.28 0.02 257);
-  --muted-foreground: oklch(0.75 0.02 257);
+  --muted-foreground: oklch(0.65 0.02 257); /* Better contrast - not too light, not too dark */
   --accent: oklch(0.28 0.02 257);
-  --accent-foreground: oklch(0.97 0.01 247.8);
+  --accent-foreground: oklch(0.98 0.01 247.8);
   --destructive: oklch(0.65 0.19 25);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
+  --border: oklch(1 0 0 / 20%); /* More visible borders */
+  --input: oklch(0.25 0.02 257); /* Darker input background for better contrast */
   --ring: oklch(0.7 0.18 275);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -109,13 +109,14 @@ body {
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.23 0.03 257);
-  --sidebar-foreground: oklch(0.97 0.01 247.8);
+  --sidebar-foreground: oklch(0.95 0.01 247.8); /* Bright sidebar text */
   --sidebar-primary: oklch(0.7 0.18 275);
   --sidebar-primary-foreground: oklch(0.12 0.03 257);
   --sidebar-accent: oklch(0.28 0.02 257);
-  --sidebar-accent-foreground: oklch(0.97 0.01 247.8);
-  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-accent-foreground: oklch(0.98 0.01 247.8); /* Bright accent text */
+  --sidebar-border: oklch(1 0 0 / 20%); /* More visible sidebar borders */
   --sidebar-ring: oklch(0.7 0.18 275);
+  --main-background: oklch(0.21 0.03 257); /* Slightly lighter than background for content area */
 }
 
 @layer base {
@@ -130,10 +131,27 @@ body {
 @layer components {
   .table-card { @apply rounded-xl border bg-card shadow-sm; }
   .table-card-header { @apply flex items-center justify-between border-b px-4 py-3; }
-  .table-card-title { @apply text-sm font-semibold; }
-  .admin-table th, .admin-table td { @apply border-r; }
+  .table-card-title { @apply text-sm font-semibold text-card-foreground; }
+  .admin-table th, .admin-table td { @apply border-r border-border; }
   .admin-table th:last-child, .admin-table td:last-child { @apply border-r-0; }
   /* Default header background for admin tables (not only on hover) */
   .admin-table thead tr { @apply bg-muted; }
-  .admin-table thead th { @apply text-xs font-medium text-muted-foreground; }
+  .admin-table thead th { @apply text-xs font-medium text-foreground; }
+  /* Ensure table cells have readable text */
+  .admin-table tbody td { @apply text-foreground; }
+  .admin-table tbody tr:hover { @apply bg-muted/50; }
+  
+  /* Landing page grid pattern */
+  .bg-grid-pattern {
+    background-image: 
+      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .dark .bg-grid-pattern {
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
 }

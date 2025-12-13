@@ -8,12 +8,12 @@ export const fetchCustomers = createAsyncThunk("customers/fetch", async (params?
   return response
 })
 
-export const createCustomer = createAsyncThunk("customers/create", async (payload: Omit<Customer, "id" | "createdAt">) => {
+export const createCustomer = createAsyncThunk("customers/create", async (payload: FormData | Omit<Customer, "id" | "createdAt">) => {
   const data = await createCustomerApi(payload)
   return data
 })
 
-export const updateCustomer = createAsyncThunk("customers/update", async (payload: Customer) => {
+export const updateCustomer = createAsyncThunk("customers/update", async (payload: FormData | Customer) => {
   const data = await updateCustomerApi(payload)
   return data
 })

@@ -1,15 +1,41 @@
 import { axios } from "@/lib/axios"
 import mockCustomers from "@/mocks/customers.json"
 
+export type ProfilePicture = {
+  id: string
+  uuid: string
+  fileName: string
+  name: string
+  url: string
+  path: string
+  mimeType: string
+  size: string
+  disk: string
+  modelType: string
+  modelId: string
+  collectionName: string
+  orderColumn: number
+  customProperties: Record<string, any>
+  createdAt: string
+  updatedAt: string
+}
+
 export type Customer = {
   id: number
   name: string
   email: string
   phone?: string
   address?: string
+  company?: string | null
+  country?: string | null
+  timezone?: string | null
   status: "Active" | "Inactive" | "Pending" | string
   createdAt: string
+  updatedAt?: string
   lastLogin?: string
+  image?: string
+  media?: any[]
+  profilePicture?: ProfilePicture | null
 }
 
 export type PaginationLinks = {
@@ -145,26 +171,39 @@ export async function fetchCustomersApi(params?: CustomersParams): Promise<Custo
   return res.data
 }
 
-export async function createCustomerApi(payload: Omit<Customer, "id" | "createdAt">): Promise<Customer> {
+export async function createCustomerApi(payload: FormData | Omit<Customer, "id" | "createdAt">): Promise<Customer> {
   if (USE_MOCK) {
     const response = await fetchCustomersApi()
     const nextId = (response.data.reduce((m, c) => Math.max(m, c.id), 0) || 0) + 1
+    const payloadData = payload instanceof FormData ? Object.fromEntries(payload) : payload
     const created: Customer = { 
       id: nextId, 
-      ...payload, 
+      ...(payloadData as any), 
       createdAt: new Date().toISOString() 
     }
     return created
   }
-  const res = await axios.post<{success: boolean, message: string, data: Customer}>("/app/customers", payload)
+  
+  const config = payload instanceof FormData 
+    ? { headers: { 'Content-Type': 'multipart/form-data' } }
+    : { headers: { 'Content-Type': 'application/json' } }
+  
+  const res = await axios.post<{success: boolean, message: string, data: Customer}>("/api/admin/customers", payload, config)
   return res.data.data
 }
 
-export async function updateCustomerApi(payload: Customer): Promise<Customer> {
+export async function updateCustomerApi(payload: FormData | Customer): Promise<Customer> {
   if (USE_MOCK) {
-    return payload
+    const payloadData = payload instanceof FormData ? Object.fromEntries(payload) : payload
+    return payloadData as Customer
   }
-  const res = await axios.put<{success: boolean, message: string, data: Customer}>(`/app/customers/${payload.id}`, payload)
+  
+  const id = payload instanceof FormData ? payload.get('id') : payload.id
+  const config = payload instanceof FormData 
+    ? { headers: { 'Content-Type': 'multipart/form-data' } }
+    : { headers: { 'Content-Type': 'application/json' } }
+  
+  const res = await axios.put<{success: boolean, message: string, data: Customer}>(`/api/admin/customers/${id}`, payload, config)
   return res.data.data
 }
 
@@ -172,7 +211,7 @@ export async function deleteCustomerApi(id: number): Promise<number> {
   if (USE_MOCK) {
     return id
   }
-  await axios.delete(`/app/customers/${id}`)
+  await axios.delete(`/api/admin/customers/${id}`)
   return id
 }
 

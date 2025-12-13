@@ -13,6 +13,7 @@ interface DialogProps {
 interface DialogContentProps {
   className?: string
   children: React.ReactNode
+  onClose?: () => void
 }
 
 interface DialogHeaderProps {
@@ -28,12 +29,12 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
       <div 
-        className="fixed inset-0 bg-black/50" 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm" 
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative z-50">
+      <div className="relative z-[101]">
         {children}
       </div>
     </div>
@@ -41,16 +42,27 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, onClose, ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={cn(
-          "bg-background border rounded-lg shadow-lg p-6 w-full max-w-lg mx-4",
+          "bg-background border rounded-lg shadow-lg p-6 w-full max-w-lg mx-4 relative",
           className
         )}
+        onClick={(e) => e.stopPropagation()}
         {...props}
       >
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-4 h-6 w-6 rounded-sm opacity-70 hover:opacity-100"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
         {children}
       </div>
     )

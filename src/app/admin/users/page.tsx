@@ -19,6 +19,7 @@ import { selectAdminsPagination, selectAdminsLinks } from "@/features/admin/admi
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function UsersPage() {
   const [q, setQ] = useState("")
@@ -37,6 +38,7 @@ export default function UsersPage() {
   const confirm = useConfirm()
   const [editing, setEditing] = useState<any | null>(null)
   const [creating, setCreating] = useState<any | null>(null)
+  const [viewing, setViewing] = useState<any | null>(null)
   // Debounce search query to prevent excessive API calls
   const debouncedQ = useDebounce(q, 500)
 
@@ -225,7 +227,7 @@ export default function UsersPage() {
                       </button>
                     </TableCell>
                     <TableCell className="space-x-1">
-                      <Button variant="outline" size="sm" title="View" onClick={() => alert(JSON.stringify(u, null, 2))}>
+                      <Button variant="outline" size="sm" title="View" onClick={() => setViewing(u)}>
                         <Eye size={14} />
                       </Button>
                       <Button variant="outline" size="sm" title="Edit" onClick={() => setEditing(u)}>

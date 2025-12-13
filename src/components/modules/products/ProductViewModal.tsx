@@ -9,6 +9,7 @@ import { Dialog, RightDialogContent } from "@/components/ui/right-dialog"
 import { DialogTitle } from "@/components/ui/dialog"
 import { PRODUCT_MODAL_CONFIG, PRODUCT_MODAL_CLASSES } from "@/lib/product-modal-config"
 import { useRouter } from "next/navigation"
+import { getProxiedImageUrl } from "@/lib/utils"
 
 interface ProductVariant {
   size: string
@@ -16,6 +17,28 @@ interface ProductVariant {
   price: number
   available: boolean
   onHand: number
+}
+
+interface Media {
+  id: string
+  uuid: string
+  fileName: string
+  name: string
+  url: string
+  path: string
+  mimeType: string
+  size: string
+  disk: string
+  modelType: string
+  modelId: string
+  collectionName: string
+  orderColumn: number
+  customProperties: Record<string, any>
+  manipulations: Record<string, any>
+  generatedConversions: Record<string, any>
+  responsiveImages: Record<string, any>
+  createdAt: string
+  updatedAt: string
 }
 
 interface Product {
@@ -28,7 +51,8 @@ interface Product {
   category: string
   sku: string
   image?: string
-  images?: string[]
+  images?: string[] | number[]
+  media?: Media[]
   variants?: ProductVariant[]
   salesPrice?: number
   salesPriceChange?: number
@@ -76,7 +100,10 @@ export default function ProductViewModal({
     { size: "EU 43", color: "Black", price: 96.00, available: false, onHand: 15 },
   ]
 
-  const mockImages = product.images || [
+  // Get images from media array, fallback to images array, then placeholder
+  const productImages = product.media?.map(m => getProxiedImageUrl(m.url) || m.url) || 
+                        (product.images?.map(img => typeof img === 'string' ? getProxiedImageUrl(img) || img : '') || [])
+  const mockImages = productImages.length > 0 ? productImages : [
     "/api/placeholder/400/300",
     "/api/placeholder/400/300",
     "/api/placeholder/400/300",

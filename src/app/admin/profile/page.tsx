@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 export default function ProfilePage() {
   const [email, setEmail] = useState("")
@@ -40,8 +41,10 @@ export default function ProfilePage() {
               onClick={() => {
                 try {
                   localStorage.setItem("user", JSON.stringify({ email, name }))
-                  alert("Profile saved")
-                } catch {}
+                  toast.success("Profile saved successfully")
+                } catch (error) {
+                  toast.error("Failed to save profile")
+                }
               }}
             >
               Save

@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +11,8 @@ import { Upload, User, X, Plus, Edit, Trash, Settings } from "lucide-react"
 import { Dialog, RightDialogContent, RightDialogHeader, RightDialogTitle } from "@/components/ui/right-dialog"
 import { DialogTitle } from "@/components/ui/dialog"
 import { PRODUCT_MODAL_CONFIG, PRODUCT_MODAL_CLASSES } from "@/lib/product-modal-config"
+import { getProxiedImageUrl } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface ProductVariant {
   id?: number
@@ -66,12 +68,18 @@ export default function EditProductModal({ open, onOpenChange, product, onSave }
   })
   const [errors, setErrors] = useState<any>({})
   const [newTag, setNewTag] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   useEffect(() => {
     if (product) {
+      // Extract image URLs from media array, fallback to images array
+      const imageUrls = product.media?.map(m => m.url) || 
+                        (product.images?.map(img => typeof img === 'string' ? img : '') || [])
+      
       setFormData({
         ...product,
-        images: product.images || [],
+        images: imageUrls,
         tags: product.tags || [],
         variants: product.variants || [],
         featured: product.featured || false
@@ -158,7 +166,39 @@ export default function EditProductModal({ open, onOpenChange, product, onSave }
 
   const handleSave = () => {
     if (validateForm()) {
-      onSave(formData)
+      // Create FormData for file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append('id', formData.id.toString())
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('description', formData.description)
+      formDataToSend.append('price', formData.price.toString())
+      formDataToSend.append('inventory', formData.inventory.toString())
+      formDataToSend.append('status', formData.status)
+      formDataToSend.append('category', formData.category)
+      formDataToSend.append('sku', formData.sku)
+      
+      if (formData.brand) formDataToSend.append('brand', formData.brand)
+      if (formData.barcode) formDataToSend.append('barcode', formData.barcode)
+      if (formData.featured !== undefined) formDataToSend.append('featured', formData.featured.toString())
+      
+      // Append tags as JSON string
+      if (formData.tags && formData.tags.length > 0) {
+        formDataToSend.append('tags', JSON.stringify(formData.tags))
+      }
+      
+      // Append variants as JSON string
+      if (formData.variants && formData.variants.length > 0) {
+        formDataToSend.append('variants', JSON.stringify(formData.variants))
+      }
+      
+      // Append image files if selected
+      // API expects 'images' key (not 'images[]') for multiple files
+      selectedFiles.forEach((file) => {
+        formDataToSend.append('images', file)
+      })
+      
+      // Pass FormData to onSave
+      onSave(formDataToSend as any)
       onOpenChange(false)
     }
   }
@@ -175,6 +215,63 @@ export default function EditProductModal({ open, onOpenChange, product, onSave }
     }
     setErrors({})
     onOpenChange(false)
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0) {
+      const newImages: string[] = []
+      const validFiles: File[] = []
+      let processedCount = 0
+      const maxSize = 5 * 1024 * 1024 // 5MB for edit modal
+      
+      Array.from(files).forEach((file) => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} is not an image file`)
+          return
+        }
+        // Validate file size
+        if (file.size > maxSize) {
+          toast.error(`${file.name} is larger than 5MB`)
+          return
+        }
+        // Store file for FormData submission
+        validFiles.push(file)
+        // Create preview URL
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          newImages.push(reader.result as string)
+          processedCount++
+          if (processedCount === files.length) {
+            setSelectedFiles(prev => [...prev, ...validFiles])
+            setFormData(prev => ({
+              ...prev,
+              images: [...(prev.images || []), ...newImages]
+            }))
+            toast.success(`${newImages.length} image(s) uploaded successfully`)
+          }
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+  }
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleRemoveImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images?.filter((_, i) => i !== index) || []
+    }))
+    // Also remove from selectedFiles if it's a new file
+    if (index >= (formData.images?.length || 0) - selectedFiles.length) {
+      const fileIndex = index - ((formData.images?.length || 0) - selectedFiles.length)
+      setSelectedFiles(prev => prev.filter((_, i) => i !== fileIndex))
+    }
+    toast.success('Image removed')
   }
 
   return (
@@ -447,15 +544,27 @@ export default function EditProductModal({ open, onOpenChange, product, onSave }
                   <div className="space-y-4">
                     {/* Existing Images Grid */}
                     <div className="grid grid-cols-2 gap-2">
-                      {formData.images?.map((image, index) => (
-                        <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                          <img 
-                            src={image} 
-                            alt={`Product ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )) || (
+                      {formData.images && formData.images.length > 0 ? (
+                        formData.images.map((image, index) => {
+                          const imageUrl = typeof image === 'string' ? getProxiedImageUrl(image) || image : ''
+                          return (
+                          <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group">
+                            <img 
+                              src={imageUrl} 
+                              alt={`Product ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              type="button"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                          )
+                        })
+                      ) : (
                         <>
                           <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
                             <User className="w-8 h-8 text-gray-400" />
@@ -475,6 +584,14 @@ export default function EditProductModal({ open, onOpenChange, product, onSave }
 
                     {/* Upload Area */}
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageSelect}
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                      />
                       <div className="flex flex-col items-center">
                         <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                           <Upload className="w-6 h-6 text-gray-400" />
@@ -485,7 +602,7 @@ export default function EditProductModal({ open, onOpenChange, product, onSave }
                         <p className="text-xs text-gray-500 mb-4">
                           JPEG, PNG, up to 5 MB
                         </p>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={handleUploadClick} type="button">
                           Browse File
                         </Button>
                       </div>

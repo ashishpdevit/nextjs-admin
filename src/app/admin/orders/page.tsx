@@ -20,6 +20,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchOrders, selectOrders, selectOrdersLoading, createOrder, updateOrder, removeOrder } from "@/store/orders"
 import { selectOrdersPagination, selectOrdersLinks } from "@/features/orders/ordersSlice"
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function OrdersPage() {
   const [q, setQ] = useState("")
@@ -29,6 +30,7 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selected, setSelected] = useState<string[]>([])
+  const [viewingOrder, setViewingOrder] = useState<any | null>(null)
   const dispatch = useAppDispatch()
   const data = useAppSelector(selectOrders)
   const loading = useAppSelector(selectOrdersLoading)
@@ -203,7 +205,7 @@ export default function OrdersPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="space-x-1">
-                  <Button variant="outline" size="sm" title="View" onClick={() => alert(o.id)}>
+                  <Button variant="outline" size="sm" title="View" onClick={() => setViewingOrder(o)}>
                     <Eye size={14} />
                   </Button>
                 </TableCell>
@@ -224,6 +226,48 @@ export default function OrdersPage() {
           />
         )} */}
       </div>
+
+      {/* Order View Dialog */}
+      <Dialog open={!!viewingOrder} onOpenChange={(open) => !open && setViewingOrder(null)}>
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          onClose={() => setViewingOrder(null)}
+        >
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+          </DialogHeader>
+          {viewingOrder && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Order ID</label>
+                  <p className="text-sm font-semibold">{viewingOrder.id}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <div className="mt-1">
+                    <Badge variant={viewingOrder.status === "Paid" || viewingOrder.status === "Shipped" ? "default" : viewingOrder.status === "Refunded" ? "destructive" : "secondary"}>
+                      {viewingOrder.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Customer</label>
+                  <p className="text-sm">{viewingOrder.customer}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Date</label>
+                  <p className="text-sm">{viewingOrder.date}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Total</label>
+                  <p className="text-sm font-semibold">${viewingOrder.total.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

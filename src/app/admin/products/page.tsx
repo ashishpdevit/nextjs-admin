@@ -76,35 +76,18 @@ export default function ProductsPage() {
     else setSelected(selected.filter((id) => !paged.some((p) => p.id === id)))
   }
 
-  const handleCreateProduct = (productData: CreateProductPayload) => {
-    // Create new product object
-    const newProduct = {
-      name: productData.name,
-      price: productData.price,
-      inventory: productData.inventory,
-      status: productData.status,
-      category: productData.category,
-      sku: productData.sku,
-      description: productData.description,
-      image: productData.image || "",
-      brand: "",
-      barcode: "",
-      featured: false,
-      images: [],
-      tags: [],
-      variants: []
-    }
-    
-    // Dispatch to Redux store
-    dispatch(createProduct(newProduct))
-    
-    // Show success message
-    toast.success("Product created successfully")
-    
-    // Close modal
-    setShowCreateModal(false)
-    
-    // Refresh the data
+  const handleCreateProduct = (productData: CreateProductPayload | FormData) => {
+    // Dispatch to Redux store (productData is now FormData from modal)
+    dispatch(createProduct(productData as any))
+      .unwrap()
+      .then(() => {
+        // Show success message
+        toast.success("Product created successfully")
+        
+        // Close modal
+        setShowCreateModal(false)
+        
+        // Refresh the data
         dispatch(fetchProducts({
           page: 1,
           limit: pageSize,
@@ -114,6 +97,10 @@ export default function ProductsPage() {
           status: status !== 'all' ? status : undefined,
           category: category || undefined,
         }))
+      })
+      .catch((error) => {
+        toast.error(error?.message || "Failed to create product")
+      })
   }
 
   const handleViewProduct = (product: any) => {
@@ -126,18 +113,19 @@ export default function ProductsPage() {
     setShowEditModal(true)
   }
 
-  const handleUpdateProduct = (updatedProduct: any) => {
-    // Dispatch to Redux store
-    dispatch(updateProduct(updatedProduct))
-    
-    // Show success message
-    toast.success("Product updated successfully")
-    
-    // Close modal
-    setShowEditModal(false)
-    setEditingProduct(null)
-    
-    // Refresh the data
+  const handleUpdateProduct = (updatedProduct: any | FormData) => {
+    // Dispatch to Redux store (updatedProduct is now FormData from modal)
+    dispatch(updateProduct(updatedProduct as any))
+      .unwrap()
+      .then(() => {
+        // Show success message
+        toast.success("Product updated successfully")
+        
+        // Close modal
+        setShowEditModal(false)
+        setEditingProduct(null)
+        
+        // Refresh the data
         dispatch(fetchProducts({
           page: 1,
           limit: pageSize,
@@ -147,6 +135,10 @@ export default function ProductsPage() {
           status: status !== 'all' ? status : undefined,
           category: category || undefined,
         }))
+      })
+      .catch((error) => {
+        toast.error(error?.message || "Failed to update product")
+      })
   }
 
   const handleDeleteProduct = async (id: number) => {

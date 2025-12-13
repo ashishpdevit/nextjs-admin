@@ -6,40 +6,99 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { User, ArrowLeft, Edit, Trash, Mail, Phone, Building, Globe, Clock } from "lucide-react"
 import PageHeader from "@/components/admin/page-header"
-import customersData from "@/mocks/customers.json"
+import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { selectCustomers, fetchCustomers } from "@/store/customers"
+import { axios } from "@/lib/axios"
+import { getProxiedImageUrl } from "@/lib/utils"
+
+interface ProfilePicture {
+  id: string
+  uuid: string
+  fileName: string
+  name: string
+  url: string
+  path: string
+  mimeType: string
+  size: string
+  disk: string
+  modelType: string
+  modelId: string
+  collectionName: string
+  orderColumn: number
+  customProperties: Record<string, any>
+  createdAt: string
+  updatedAt: string
+}
 
 interface Customer {
   id: number
   name: string
   email: string
   phone: string
-  company: string
+  company: string | null
   status: "Active" | "Inactive"
-  country: string
-  timezone: string
+  country: string | null
+  timezone: string | null
   createdAt: string
   updatedAt: string
+  image?: string
+  media?: any[]
+  profilePicture?: ProfilePicture | null
 }
 
 export default function CustomerDetailPage() {
   const router = useRouter()
   const params = useParams()
   const customerId = parseInt(params.id as string)
+  const dispatch = useAppDispatch()
   
+  const customers = useAppSelector(selectCustomers)
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
+  const [imageError, setImageError] = useState(false)
+
+  // Reset image error when customer changes
+  useEffect(() => {
+    setImageError(false)
+  }, [customer?.id, customer?.profilePicture?.url])
 
   useEffect(() => {
-    // Find customer by ID
-    const foundCustomer = customersData.find(c => c.id === customerId)
-    if (foundCustomer) {
-      setCustomer(foundCustomer)
-    } else {
-      // Customer not found, redirect back
-      router.push("/admin/customers")
+    const loadCustomer = async () => {
+      // First, try to find customer in Redux store
+      let foundCustomer = customers.find(c => c.id === customerId)
+      
+      if (foundCustomer) {
+        console.log('Customer from Redux:', foundCustomer)
+        console.log('ProfilePicture:', (foundCustomer as any).profilePicture)
+        setCustomer(foundCustomer as Customer)
+        setImageError(false) // Reset error when loading new customer
+        setLoading(false)
+        return
+      }
+      
+      // If not in store, try to fetch from API
+      try {
+        const response = await axios.get<{success: boolean, message: string, data: Customer}>(`/api/admin/customers/${customerId}`)
+        if (response.data.success && response.data.data) {
+          console.log('Customer from API:', response.data.data)
+          console.log('ProfilePicture:', response.data.data.profilePicture)
+          setCustomer(response.data.data)
+          setImageError(false) // Reset error when loading new customer
+        } else {
+          // Customer not found, redirect back
+          router.push("/admin/customers")
+        }
+      } catch (error) {
+        console.error("Error fetching customer:", error)
+        // Customer not found, redirect back
+        router.push("/admin/customers")
+      } finally {
+        setLoading(false)
+      }
     }
-    setLoading(false)
-  }, [customerId, router])
+    
+    loadCustomer()
+  }, [customerId, router, customers, dispatch])
 
   const handleEdit = () => {
     router.push(`/admin/customers/edit/${customerId}`)
@@ -109,10 +168,6 @@ export default function CustomerDetailPage() {
       <PageHeader
         title={customer.name}
         subtitle="Customer Details"
-        breadcrumbs={[
-          { label: "Customers", href: "/admin/customers" },
-          { label: customer.name }
-        ]}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -121,11 +176,35 @@ export default function CustomerDetailPage() {
           <Card>
             <CardContent className="p-6">
               <div className="flex flex-col items-center text-center">
-                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
-                  <User className="w-12 h-12 text-muted-foreground" />
+                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4 overflow-hidden">
+                  {(() => {
+                    // Check for profilePicture first, then fallback to image
+                    const originalUrl = (customer.profilePicture as any)?.url || customer.profilePicture?.url || customer.image
+                    const imageUrl = getProxiedImageUrl(originalUrl)
+                    
+                    if (imageUrl && !imageError) {
+                      return (
+                        <img 
+                          key={`img-${customer.id}-${imageUrl}`}
+                          src={imageUrl} 
+                          alt={customer.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('Image load error for customer:', customer.id, 'URL:', imageUrl);
+                            setImageError(true);
+                          }}
+                          onLoad={() => {
+                            console.log('Image loaded successfully for customer:', customer.id);
+                            setImageError(false);
+                          }}
+                        />
+                      )
+                    }
+                    return <User className="w-12 h-12 text-muted-foreground" />
+                  })()}
                 </div>
                 <h3 className="text-xl font-semibold">{customer.name}</h3>
-                <p className="text-muted-foreground">{customer.company}</p>
+                <p className="text-muted-foreground">{customer.company || "No company"}</p>
                 <Badge 
                   variant={customer.status === "Active" ? "default" : "secondary"}
                   className="mt-2"
@@ -181,7 +260,7 @@ export default function CustomerDetailPage() {
                   <Building className="w-5 h-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Company</p>
-                    <p className="text-sm text-muted-foreground">{customer.company}</p>
+                    <p className="text-sm text-muted-foreground">{customer.company || "N/A"}</p>
                   </div>
                 </div>
 
@@ -190,8 +269,13 @@ export default function CustomerDetailPage() {
                   <div>
                     <p className="text-sm font-medium">Country</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{getCountryFlag(customer.country)}</span>
-                      <span className="text-sm text-muted-foreground">{customer.country}</span>
+                      {customer.country && (
+                        <>
+                          <span className="text-lg">{getCountryFlag(customer.country)}</span>
+                          <span className="text-sm text-muted-foreground">{customer.country}</span>
+                        </>
+                      )}
+                      {!customer.country && <span className="text-sm text-muted-foreground">N/A</span>}
                     </div>
                   </div>
                 </div>
@@ -209,7 +293,7 @@ export default function CustomerDetailPage() {
                   <Clock className="w-5 h-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Time Zone</p>
-                    <p className="text-sm text-muted-foreground">{customer.timezone}</p>
+                    <p className="text-sm text-muted-foreground">{customer.timezone || "N/A"}</p>
                   </div>
                 </div>
 

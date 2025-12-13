@@ -21,3 +21,44 @@ export function exportCsv(filename: string, rows: any[], columns: string[]) {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+/**
+ * Converts an image URL to use the Next.js proxy route to avoid CORS issues
+ * @param imageUrl - The original image URL (e.g., http://localhost:3000/images/file.png)
+ * @returns The proxied URL (e.g., /api/images/file.png)
+ */
+export function getProxiedImageUrl(imageUrl: string | undefined | null): string | undefined {
+  if (!imageUrl) return undefined
+  
+  try {
+    const url = new URL(imageUrl)
+    
+    // Check if it's from localhost:3000 or the API URL
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000'
+    const apiUrl = new URL(apiBaseUrl)
+    
+    // If the image is from the same origin as the API, proxy it
+    if (url.origin === apiUrl.origin && url.pathname.startsWith('/images/')) {
+      // Extract the path after /images/
+      const imagePath = url.pathname.replace('/images/', '')
+      return `/api/images/${imagePath}`
+    }
+    
+    // If it's already a relative URL or from a different origin, return as is
+    return imageUrl
+  } catch (error) {
+    // If URL parsing fails, check if it's already a relative path
+    if (imageUrl.startsWith('/')) {
+      return imageUrl
+    }
+    
+    // If it starts with /images/, convert to proxy route
+    if (imageUrl.startsWith('/images/')) {
+      const imagePath = imageUrl.replace('/images/', '')
+      return `/api/images/${imagePath}`
+    }
+    
+    // Return as is if we can't parse it
+    return imageUrl
+  }
+}
