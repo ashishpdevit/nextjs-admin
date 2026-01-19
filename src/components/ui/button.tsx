@@ -12,6 +12,7 @@ export interface ButtonProps
     | "ghost"
     | "link"
   size?: "sm" | "md" | "lg" | "icon"
+  asChild?: boolean
 }
 
 const base =
@@ -38,11 +39,24 @@ const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "md", ...props }, ref) => {
+  ({ className, variant = "default", size = "md", asChild, ...props }, ref) => {
+    const buttonClassName = cn(base, variants[variant], sizes[size], className)
+
+    if (asChild) {
+      const child = React.Children.only(props.children) as React.ReactElement
+      // Filter out children prop that shouldn't be passed to the child
+      const { children: _, ...filteredProps } = props
+      const childClassName = (child.props as any)?.className
+      return React.cloneElement(child, {
+        className: cn(buttonClassName, childClassName),
+        ...filteredProps,
+      } as any)
+    }
+
     return (
       <button
         ref={ref}
-        className={cn(base, variants[variant], sizes[size], className)}
+        className={buttonClassName}
         {...props}
       />
     )
