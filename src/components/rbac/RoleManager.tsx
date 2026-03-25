@@ -1,11 +1,12 @@
 "use client"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { useRBAC } from "@/hooks/use-rbac"
 import type { Permission, Role } from "@/features/rbac/rbacTypes"
@@ -43,12 +44,17 @@ export function RoleManager() {
   const [form, setForm] = useState<RoleFormState | null>(null)
   const [saving, setSaving] = useState(false)
 
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const openForm = (role?: Role) => {
     if (!canManage) return
     if (role) {
       const grantAll = role.permissions.includes("*")
       setForm({
-        id: role.id,
+        id: role.id?.toString() ?? "",
         name: role.name,
         description: role.description ?? "",
         permissions: grantAll ? permissionsCatalog.map((permission) => permission.id) : [...role.permissions],
@@ -178,7 +184,7 @@ export function RoleManager() {
         title="Role catalog"
         right={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={refresh} disabled={loading}>
+            <Button variant="outline" onClick={refresh} disabled={isMounted ? loading : false}>
               Refresh
             </Button>
             <PermissionGate allow="rbac:manage">
@@ -187,7 +193,7 @@ export function RoleManager() {
           </div>
         }
       >
-        {loading ? (
+        {isMounted && loading ? (
           <TableLoadingState message="Loading roles..." />
         ) : roles.length === 0 ? (
           <TableEmptyState 
@@ -263,21 +269,15 @@ export function RoleManager() {
         )}
       </TableCard>
 
-      {form && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-          onClick={closeForm}
-        >
-          <div
-            className="w-full max-w-lg rounded-lg border bg-background p-4 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-3 text-sm font-semibold">
-              {form.id ? "Edit role" : "Create role"}
-            </div>
-            <div className="grid gap-3">
+      <Dialog open={!!form} onOpenChange={(open) => !open && closeForm()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{form?.id ? "Edit role" : "Create role"}</DialogTitle>
+          </DialogHeader>
+          {form && (
+            <div className="grid gap-4 py-4">
               <div className="grid gap-1.5">
-                <label className="text-sm">Name</label>
+                <label className="text-sm font-medium">Name</label>
                 <Input
                   value={form.name}
                   onChange={(event) => setForm((prev) => prev && { ...prev, name: event.target.value })}
@@ -285,7 +285,7 @@ export function RoleManager() {
                 />
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm">Description</label>
+                <label className="text-sm font-medium">Description</label>
                 <Input
                   value={form.description}
                   onChange={(event) => setForm((prev) => prev && { ...prev, description: event.target.value })}
@@ -322,17 +322,17 @@ export function RoleManager() {
                 )}
               </div>
             </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={closeForm}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={closeForm}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

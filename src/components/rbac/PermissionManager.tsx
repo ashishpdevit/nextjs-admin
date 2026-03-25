@@ -1,11 +1,13 @@
 "use client"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { useRBAC } from "@/hooks/use-rbac"
 import type { Permission } from "@/features/rbac/rbacTypes"
@@ -39,6 +41,11 @@ export function PermissionManager() {
 
   const [form, setForm] = useState<PermissionFormState | null>(null)
   const [saving, setSaving] = useState(false)
+
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const openForm = (permission?: Permission) => {
     if (!canManage) return
@@ -119,7 +126,7 @@ export function PermissionManager() {
         title="Permission catalog"
         right={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={refresh} disabled={loading}>
+            <Button variant="outline" onClick={refresh} disabled={isMounted ? loading : false}>
               Refresh
             </Button>
             <PermissionGate allow="rbac:manage">
@@ -128,7 +135,12 @@ export function PermissionManager() {
           </div>
         }
       >
-        <Table className="admin-table">
+        {isMounted && loading ? (
+          <TableLoadingState message="Loading permissions..." />
+        ) : permissionsCatalog.length === 0 ? (
+          <TableEmptyState title="No permissions found" message="Create your first permission to get started." />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -179,44 +191,32 @@ export function PermissionManager() {
                 </TableCell>
               </TableRow>
             ))}
-            {!permissionsCatalog.length && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                  No permissions defined yet.
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
+        )}
       </TableCard>
 
-      {form && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-          onClick={closeForm}
-        >
-          <div
-            className="w-full max-w-lg rounded-lg border bg-background p-4 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-3 text-sm font-semibold">
-              {form.id ? "Edit permission" : "Create permission"}
-            </div>
-            <div className="grid gap-3">
+      <Dialog open={!!form} onOpenChange={(open) => !open && closeForm()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{form?.id ? "Edit permission" : "Create permission"}</DialogTitle>
+          </DialogHeader>
+          {form && (
+            <div className="grid gap-4 py-4">
               <div className="grid gap-1.5">
-                <label className="text-sm">Name</label>
+                <label className="text-sm font-medium">Name</label>
                 <Input
                   value={form.name}
                   onChange={(event) => setForm((prev) => prev && { ...prev, name: event.target.value })}
                 />
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm">Module / resource</label>
+                <label className="text-sm font-medium">Module / resource</label>
                 <Select
                   value={form.resource}
                   onChange={(event) => setForm((prev) => prev && { ...prev, resource: event.target.value })}
                 >
-                  <option value="">Select module</option>
+                  <option value="" disabled>Select module</option>
                   {modules.map((module) => (
                     <option key={module.id} value={module.resource}>
                       {module.name} ({module.resource})
@@ -225,7 +225,7 @@ export function PermissionManager() {
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm">Action</label>
+                <label className="text-sm font-medium">Action</label>
                 <Input
                   value={form.action}
                   onChange={(event) => setForm((prev) => prev && { ...prev, action: event.target.value })}
@@ -233,24 +233,24 @@ export function PermissionManager() {
                 />
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm">Description</label>
+                <label className="text-sm font-medium">Description</label>
                 <Input
                   value={form.description}
                   onChange={(event) => setForm((prev) => prev && { ...prev, description: event.target.value })}
                 />
               </div>
             </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={closeForm}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={closeForm}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

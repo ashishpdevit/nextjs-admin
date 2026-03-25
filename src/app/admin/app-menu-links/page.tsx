@@ -162,7 +162,7 @@ export default function AppMenuLinksPage() {
                 </TableCell>
                 <TableCell>{l.name}</TableCell>
                 <TableCell>{l.type}</TableCell>
-                <TableCell>{l.for}</TableCell>
+                <TableCell>{l.audience}</TableCell>
                 <TableCell>{new Date(l.updatedAt).toLocaleString()}</TableCell>
                 <TableCell className="space-x-1">
                   <Button

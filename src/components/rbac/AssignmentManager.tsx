@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { useRBAC } from "@/hooks/use-rbac"
 import { toast } from "sonner"
@@ -33,6 +34,11 @@ export function AssignmentManager() {
 
   const [form, setForm] = useState<AssignmentFormState>({ email: "", roleId: roles[0]?.id ?? "" })
   const [saving, setSaving] = useState(false)
+
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -122,12 +128,17 @@ export function AssignmentManager() {
       <TableCard
         title="Active assignments"
         right={
-          <Button variant="outline" onClick={refresh} disabled={loading}>
+          <Button variant="outline" onClick={refresh} disabled={isMounted ? loading : false}>
             Refresh
           </Button>
         }
       >
-        <Table className="admin-table">
+        {isMounted && loading ? (
+          <TableLoadingState message="Loading assignments..." />
+        ) : assignmentsCatalog.length === 0 ? (
+          <TableEmptyState title="No assignments found" message="Assign a role to a user to get started." />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
@@ -164,15 +175,9 @@ export function AssignmentManager() {
                 </TableRow>
               )
             })}
-            {!assignmentsCatalog.length && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                  No assignments yet.
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
+      )}
       </TableCard>
     </div>
   )

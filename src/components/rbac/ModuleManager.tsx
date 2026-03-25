@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { useRBAC } from "@/hooks/use-rbac"
 import type { Module } from "@/features/rbac/rbacTypes"
@@ -133,7 +135,12 @@ export function ModuleManager() {
           </div>
         }
       >
-        <Table className="admin-table">
+        {isMounted && loading ? (
+          <TableLoadingState message="Loading modules..." />
+        ) : modules.length === 0 ? (
+          <TableEmptyState title="No modules found" message="Create your first module to get started." />
+        ) : (
+          <Table className="admin-table">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -192,39 +199,27 @@ export function ModuleManager() {
                 </TableCell>
               </TableRow>
             ))}
-            {!modules.length && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                  No modules defined yet.
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
+        )}
       </TableCard>
 
-      {form && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-          onClick={closeForm}
-        >
-          <div
-            className="w-full max-w-lg rounded-lg border bg-background p-4 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-3 text-sm font-semibold">
-              {form.id ? "Edit module" : "Create module"}
-            </div>
-            <div className="grid gap-3">
+      <Dialog open={!!form} onOpenChange={(open) => !open && closeForm()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{form?.id ? "Edit module" : "Create module"}</DialogTitle>
+          </DialogHeader>
+          {form && (
+            <div className="grid gap-4 py-4">
               <div className="grid gap-1.5">
-                <label className="text-sm">Name</label>
+                <label className="text-sm font-medium">Name</label>
                 <Input
                   value={form.name}
                   onChange={(event) => setForm((prev) => prev && { ...prev, name: event.target.value })}
                 />
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm">Resource key</label>
+                <label className="text-sm font-medium">Resource key</label>
                 <Input
                   value={form.resource}
                   onChange={(event) => setForm((prev) => prev && { ...prev, resource: event.target.value })}
@@ -232,14 +227,14 @@ export function ModuleManager() {
                 />
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm">Description</label>
+                <label className="text-sm font-medium">Description</label>
                 <Input
                   value={form.description}
                   onChange={(event) => setForm((prev) => prev && { ...prev, description: event.target.value })}
                 />
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm">Tags (comma separated)</label>
+                <label className="text-sm font-medium">Tags (comma separated)</label>
                 <Input
                   value={form.tags}
                   onChange={(event) => setForm((prev) => prev && { ...prev, tags: event.target.value })}
@@ -247,17 +242,17 @@ export function ModuleManager() {
                 />
               </div>
             </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={closeForm}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={closeForm}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
