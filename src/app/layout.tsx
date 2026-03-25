@@ -4,6 +4,7 @@ import "./globals.css";
 import { StoreProvider } from "@/providers/store-provider";
 import GlobalLoader from "@/components/GlobalLoader";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
+import QueryProvider from "@/providers/QueryProvider";
 // import { ToastProvider } from "@/components/Toaster";
 import { Toaster } from "@/components/ui/sonner"
 
@@ -35,12 +36,14 @@ export default function RootLayout({
       >
         <Toaster />
         {/* <ToastProvider> */}
+        <QueryProvider>
           <StoreProvider>
             <ConfirmProvider>
               {children}
             </ConfirmProvider>
             <GlobalLoader />
           </StoreProvider>
+        </QueryProvider>
         {/* </ToastProvider> */}
       </body>
     </html>

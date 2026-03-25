@@ -1,7 +1,8 @@
-﻿import { NextResponse } from "next/server"
+﻿﻿import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { matchRoutePermission } from "@/lib/rbac"
 import rbacDefaults from "@/mocks/rbac.json"
+import { jwtVerify } from "jose"
 
 type StoredUser = {
   email: string
@@ -15,14 +16,19 @@ type RoleDefaults = {
   permissions: string[]
 }
 
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "change-me-admin-jwt-secret-change-me"
+)
+
 const ROLE_PERMISSION_INDEX = new Map<string, string[]>(
   (rbacDefaults.roles as RoleDefaults[]).map((role) => [role.id, [...role.permissions]]),
 )
 
-function parseUserCookie(cookieValue?: string): StoredUser | null {
-  if (!cookieValue) return null
+async function parseUserToken(tokenValue?: string): Promise<StoredUser | null> {
+  if (!tokenValue) return null
   try {
-    return JSON.parse(decodeURIComponent(cookieValue)) as StoredUser
+    const { payload } = await jwtVerify(tokenValue, JWT_SECRET)
+    return payload as unknown as StoredUser
   } catch {
     return null
   }
@@ -45,10 +51,10 @@ function hasPermission(permissions: string[], permission?: string): boolean {
   return permissions.includes(permission)
 }
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const authed = req.cookies.get("auth")?.value === "1"
-  const user = parseUserCookie(req.cookies.get("user")?.value)
+  const user = await parseUserToken(req.cookies.get("user")?.value)
 
   const permissions = resolvePermissions(user)
   const isAdminRoute = pathname.startsWith("/admin")

@@ -1,5 +1,6 @@
 "use client"
-import { Suspense, lazy, ComponentType } from "react"
+import { Suspense, ComponentType } from "react"
+import dynamic from "next/dynamic"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 
@@ -32,20 +33,18 @@ export function withLazyLoading<T extends object>(
 }
 
 // Lazy load heavy admin components
-export const LazyFaqsTable = lazy(() => import("@/components/modules/faqs/FaqsTable"))
-export const LazyCreateFaqDialog = lazy(() => import("@/components/modules/faqs/CreateFaqDialog"))
-export const LazyEditFaqDialog = lazy(() => import("@/components/modules/faqs/EditFaqDialog"))
-export const LazyTableCard = lazy(() => import("@/components/admin/table-card").then(module => ({ default: module.TableCard })))
-export const LazyFiltersBar = lazy(() => import("@/components/admin/filters").then(module => ({ default: module.FiltersBar })))
-
-// Lazy load admin pages
-export const LazyFaqsPage = lazy(() => import("@/app/admin/faqs/page"))
-export const LazyProductsPage = lazy(() => import("@/app/admin/products/page"))
-export const LazyUsersPage = lazy(() => import("@/app/admin/users/page"))
-export const LazyOrdersPage = lazy(() => import("@/app/admin/orders/page"))
-export const LazyAppSettingsPage = lazy(() => import("@/app/admin/app-settings/page"))
-export const LazyAppMenuLinksPage = lazy(() => import("@/app/admin/app-menu-links/page"))
-export const LazyContactUsPage = lazy(() => import("@/app/admin/contact-us/page"))
-export const LazyProfilePage = lazy(() => import("@/app/admin/profile/page"))
-export const LazySettingsPage = lazy(() => import("@/app/admin/settings/page"))
-
+export const LazyFaqsTable = dynamic(() => import("@/components/modules/faqs/FaqsTable"), {
+  loading: () => <LoadingSpinner message="Loading Table..." />
+})
+export const LazyCreateFaqDialog = dynamic(() => import("@/components/modules/faqs/CreateFaqDialog"), {
+  loading: () => <LoadingSpinner />
+})
+export const LazyEditFaqDialog = dynamic(() => import("@/components/modules/faqs/EditFaqDialog"), {
+  loading: () => <LoadingSpinner />
+})
+export const LazyTableCard = dynamic(() => import("@/components/admin/table-card").then(mod => mod.TableCard), {
+  loading: () => <LoadingSpinner />
+})
+export const LazyFiltersBar = dynamic(() => import("@/components/admin/filters").then(mod => mod.FiltersBar), {
+  loading: () => <LoadingSpinner />
+})

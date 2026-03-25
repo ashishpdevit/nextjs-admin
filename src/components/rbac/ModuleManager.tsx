@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,11 +38,16 @@ export function ModuleManager() {
   const [form, setForm] = useState<ModuleFormState | null>(null)
   const [saving, setSaving] = useState(false)
 
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const openForm = (module?: Module) => {
     if (!canManage) return
     if (module) {
       setForm({
-        id: module.id,
+        id: module.id?.toString() ?? "",
         name: module.name,
         description: module.description ?? "",
         resource: module.resource,
@@ -81,6 +86,7 @@ export function ModuleManager() {
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean),
+        key: form.resource.trim().toLowerCase(),
       })
       toast.success(form.id ? "Module updated" : "Module created")
       closeForm()
@@ -98,7 +104,7 @@ export function ModuleManager() {
     )
     if (!confirmed) return
     try {
-      await removeModule(module.id)
+      await removeModule(module.id?.toString() ?? "")
       toast.success("Module deleted")
     } catch (error: any) {
       toast.error(error?.message ?? "Unable to delete module")
@@ -118,7 +124,7 @@ export function ModuleManager() {
         title="Module overview"
         right={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={refresh} disabled={loading}>
+            <Button variant="outline" onClick={refresh} disabled={isMounted ? loading : false}>
               Refresh
             </Button>
             <PermissionGate allow="rbac:manage">

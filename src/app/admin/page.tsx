@@ -1,9 +1,12 @@
-"use client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import admins from "@/mocks/admins.json"
 import customers from "@/mocks/customers.json"
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  // Simulate a real database/API call to ensure loading.tsx triggers properly.
+  // Note: Remove this artificial delay when you connect your real database!
+  await new Promise((resolve) => setTimeout(resolve, 600))
+
   const totalAdmins = admins.length
   const activeAdmins = admins.filter(a => a.status === "Active").length
   const totalCustomers = customers.length

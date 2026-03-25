@@ -15,12 +15,10 @@ export default function Breadcrumbs({ className = "" }: { className?: string }) 
   const [brand, setBrand] = useState("Admin")
 
   useEffect(() => {
-    try {
-      const b = localStorage.getItem("brand:name")
-      if (b) setBrand(b)
-    } catch {}
+    const b = localStorage.getItem("brand:name")
+    if (b) setBrand(b)
   }, [])
-
+  
   const crumbs = useMemo(() => {
     if (!pathname) return [] as { href: string; label: string }[]
     const parts = pathname.split("?")[0].split("/").filter(Boolean)
@@ -69,7 +67,8 @@ export default function Breadcrumbs({ className = "" }: { className?: string }) 
             {i < crumbs.length - 1 ? (
               <Link href={c.href} className="hover:underline">{c.label}</Link>
             ) : (
-              <span className="font-medium text-foreground">{c.label}</span>
+              /* suppressHydrationWarning cleanly allows localStorage to override server text without errors */
+              <span suppressHydrationWarning className="font-medium text-foreground">{c.label}</span>
             )}
           </li>
         ))}
@@ -77,4 +76,3 @@ export default function Breadcrumbs({ className = "" }: { className?: string }) 
     </nav>
   )
 }
-
