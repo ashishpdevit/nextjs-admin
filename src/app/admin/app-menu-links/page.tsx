@@ -10,9 +10,52 @@ import { Button } from "@/components/ui/button"
 import { FiltersBar } from "@/components/admin/filters"
 import { exportCsv } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { fetchAppMenuLinks, saveAppMenuLink, selectAppMenuLinks, selectAppMenuLinksLoading } from "@/store/appMenuLinks"
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 import { toast } from "sonner"
+import { z } from "zod"
+import { useForm, useWatch, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import dynamic from "next/dynamic"
+
+const CKEditorWrapper = dynamic(
+  async () => {
+    const { CKEditor } = await import("@ckeditor/ckeditor5-react")
+    const ClassicEditor = (await import("@ckeditor/ckeditor5-build-classic")).default
+    return function Editor(props: any) {
+      return <CKEditor editor={ClassicEditor} {...props} />
+    }
+  },
+  { ssr: false, loading: () => <div className="flex min-h-[300px] items-center justify-center rounded-md border bg-muted/50 text-sm text-muted-foreground">Loading editor...</div> }
+)
+
+const linkSchema = z.object({
+  id: z.number().optional(),
+  name: z.string().min(2, "Name must be at least 2 characters."),
+  type: z.string().min(1, "Type is required."),
+  audience: z.string().min(1, "Audience is required."),
+  link: z.string().optional(),
+  content: z.string().optional(),
+  updatedAt: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.type === "link" && (!data.link || data.link.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Link is required.",
+      path: ["link"]
+    })
+  }
+  if (data.type === "ckeditor" && (!data.content || data.content.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Content is required.",
+      path: ["content"]
+    })
+  }
+})
+
+type LinkFormData = z.infer<typeof linkSchema>
 
 export default function AppMenuLinksPage() {
   const [q, setQ] = useState("")
@@ -28,6 +71,21 @@ export default function AppMenuLinksPage() {
   const loading = useAppSelector(selectAppMenuLinksLoading)
   const [editing, setEditing] = useState<any | null>(null)
   const hasFetched = useRef(false)
+
+  const { register, control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<LinkFormData>({
+    resolver: zodResolver(linkSchema),
+    defaultValues: { name: "", type: "link", audience: "User", link: "", content: "" }
+  })
+
+  const formType = useWatch({ control, name: "type" })
+
+  useEffect(() => {
+    if (editing) {
+      reset({ ...editing, link: editing.link || "", content: editing.content || "" })
+    } else {
+      reset({ name: "", type: "link", audience: "User", link: "", content: "" })
+    }
+  }, [editing, reset])
 
   const fetchData = useCallback(() => {
     if (!hasFetched.current && !loading && (!data || data.length === 0)) {
@@ -61,6 +119,13 @@ export default function AppMenuLinksPage() {
     return list
   }, [filtered, sortKey, sortDir])
 
+  const onSubmit = async (formData: LinkFormData) => {
+    // If your dispatch is an async thunk, you can await it here.
+    dispatch(saveAppMenuLink(formData))
+    toast.success("Link saved successfully")
+    setEditing(null)
+  }
+
   const total = sorted.length
   const paged = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -77,9 +142,19 @@ export default function AppMenuLinksPage() {
           <p className="mt-1 text-xs text-muted-foreground">{total} links</p>
         </div>
         <div className="flex items-center gap-2">
+          {selected.length > 0 && (
+            <Button variant="destructive" onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${selected.length} items?`)) {
+                toast.success(`Deleted ${selected.length} items`)
+                setSelected([])
+              }
+            }}>
+              Delete Selected ({selected.length})
+            </Button>
+          )}
           <Button variant="outline" onClick={() => {
             const rows = sorted
-            const cols = ["name", "type", "audience", "updatedAt", "link"]
+            const cols = ["name", "type", "audience", "updatedAt", "link", "content"]
             exportCsv("app-menu-links.csv", rows, cols)
           }}>Export</Button>
         </div>
@@ -130,7 +205,7 @@ export default function AppMenuLinksPage() {
                 ["type", "Type"],
                 ["audience", "For"],
                 ["updatedAt", "Last Updated"],
-                ["link", "Generated Link"],
+                ["link", "Link / Content"],
                 ["action", "Action"],
               ].map(([key, label]) => (
                 <TableHead
@@ -197,43 +272,73 @@ export default function AppMenuLinksPage() {
           />
         )}
 
-        {editing && (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setEditing(null)}>
-            <div className="w-full max-w-md rounded-lg border bg-background p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-3 text-sm font-semibold">Edit App Menu Link</div>
-              <div className="grid gap-3">
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Name</label>
-                  <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-1.5">
-                    <label className="text-sm">Type</label>
-                    <Select value={editing.type} onChange={(e) => setEditing({ ...editing, type: e.target.value })}>
-                      <option value="ckeditor">ckeditor</option>
-                      <option value="link">link</option>
-                    </Select>
+        <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+          <DialogContent className="sm:max-w-2xl sm:h-[650px] flex flex-col overflow-hidden">
+            <DialogHeader className="shrink-0">
+              <DialogTitle>Edit App Menu Link</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+              {editing && (
+                <div className="flex flex-col gap-4 py-4 flex-1 overflow-y-auto pr-1">
+                  <div className="grid gap-1.5 shrink-0">
+                    <label className="text-sm font-medium">Name</label>
+                    <Input {...register("name")} className={errors.name ? "border-destructive" : ""} />
+                    {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
                   </div>
-                  <div className="grid gap-1.5">
-                    <label className="text-sm">For</label>
-                    <Select value={editing.audience} onChange={(e) => setEditing({ ...editing, audience: e.target.value })}>
-                      <option value="User">User</option>
-                      <option value="Website">Website</option>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3 shrink-0">
+                    <div className="grid gap-1.5">
+                      <label className="text-sm font-medium">Type</label>
+                      <Select {...register("type")} className={errors.type ? "border-destructive" : ""}>
+                        <option value="ckeditor">ckeditor</option>
+                        <option value="link">link</option>
+                      </Select>
+                      {errors.type && <p className="text-xs text-destructive">{errors.type.message}</p>}
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="text-sm font-medium">For</label>
+                      <Select {...register("audience")} className={errors.audience ? "border-destructive" : ""}>
+                        <option value="User">User</option>
+                        <option value="Website">Website</option>
+                      </Select>
+                      {errors.audience && <p className="text-xs text-destructive">{errors.audience.message}</p>}
+                    </div>
                   </div>
+                  {formType === "ckeditor" ? (
+                    <div className="flex flex-col gap-1.5 flex-1 min-h-[300px]">
+                      <label className="text-sm font-medium">Editor Content</label>
+                      <style>{`.ck-editor__editable_inline { min-height: 300px; max-height: 350px; overflow-y: auto; }`}</style>
+                      <div className={`flex-1 rounded-md overflow-hidden text-foreground ${errors.content ? "border border-destructive" : ""}`}>
+                        <Controller
+                          name="content"
+                          control={control}
+                          render={({ field }) => (
+                            <CKEditorWrapper
+                              data={field.value || ""}
+                              onChange={(_event: any, editor: any) => field.onChange(editor.getData())}
+                            />
+                          )}
+                        />
+                      </div>
+                      {errors.content && <p className="text-xs text-destructive">{errors.content.message}</p>}
+                    </div>
+                  ) : (
+                    <div className="grid gap-1.5 shrink-0">
+                      <label className="text-sm font-medium">Generated Link</label>
+                      <Input {...register("link")} className={errors.link ? "border-destructive" : ""} placeholder="https://..." />
+                      {errors.link && <p className="text-xs text-destructive">{errors.link.message}</p>}
+                    </div>
+                  )}
                 </div>
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Generated Link</label>
-                  <Input value={editing.link} onChange={(e) => setEditing({ ...editing, link: e.target.value })} />
-                </div>
+              )}
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t shrink-0">
+                <Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save"}
+                </Button>
               </div>
-              <div className="mt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
-                <Button onClick={() => { dispatch(saveAppMenuLink(editing)); setEditing(null) }}>Save</Button>
-              </div>
-            </div>
-          </div>
-        )}
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

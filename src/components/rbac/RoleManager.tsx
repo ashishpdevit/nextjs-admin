@@ -270,13 +270,13 @@ export function RoleManager() {
       </TableCard>
 
       <Dialog open={!!form} onOpenChange={(open) => !open && closeForm()}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl sm:h-[650px] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{form?.id ? "Edit role" : "Create role"}</DialogTitle>
           </DialogHeader>
           {form && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-1.5">
+            <div className="flex flex-col gap-4 py-4 flex-1 overflow-y-auto pr-1">
+              <div className="grid gap-1.5 shrink-0">
                 <label className="text-sm font-medium">Name</label>
                 <Input
                   value={form.name}
@@ -284,15 +284,15 @@ export function RoleManager() {
                   disabled={form.isSystem}
                 />
               </div>
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 shrink-0">
                 <label className="text-sm font-medium">Description</label>
                 <Input
                   value={form.description}
                   onChange={(event) => setForm((prev) => prev && { ...prev, description: event.target.value })}
                 />
               </div>
-              <div className="rounded-md border p-3">
-                <label className="flex items-center gap-2 text-sm font-medium">
+              <div className="rounded-md border p-3 flex flex-col min-h-0 flex-1">
+                <label className="flex items-center gap-2 text-sm font-medium shrink-0">
                   <Checkbox
                     checked={form.grantAll}
                     onChange={(event) => handleGrantAllToggle(event.currentTarget.checked)}
@@ -300,7 +300,7 @@ export function RoleManager() {
                   Grant all permissions
                 </label>
                 {!form.grantAll && (
-                  <div className="mt-3 grid max-h-60 gap-2 overflow-y-auto pr-2 text-sm">
+                  <div className="mt-3 grid gap-2 overflow-y-auto pr-2 text-sm flex-1">
                     {permissionsCatalog.map((permission) => {
                       const checked = form.permissions.includes(permission.id)
                       return (
@@ -323,7 +323,7 @@ export function RoleManager() {
               </div>
             </div>
           )}
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t shrink-0">
             <Button variant="outline" onClick={closeForm}>
               Cancel
             </Button>

@@ -197,20 +197,20 @@ export function PermissionManager() {
       </TableCard>
 
       <Dialog open={!!form} onOpenChange={(open) => !open && closeForm()}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl sm:h-[650px] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{form?.id ? "Edit permission" : "Create permission"}</DialogTitle>
           </DialogHeader>
           {form && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-1.5">
+            <div className="flex flex-col gap-4 py-4 flex-1 overflow-y-auto pr-1">
+              <div className="grid gap-1.5 shrink-0">
                 <label className="text-sm font-medium">Name</label>
                 <Input
                   value={form.name}
                   onChange={(event) => setForm((prev) => prev && { ...prev, name: event.target.value })}
                 />
               </div>
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 shrink-0">
                 <label className="text-sm font-medium">Module / resource</label>
                 <Select
                   value={form.resource}
@@ -224,7 +224,7 @@ export function PermissionManager() {
                   ))}
                 </Select>
               </div>
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 shrink-0">
                 <label className="text-sm font-medium">Action</label>
                 <Input
                   value={form.action}
@@ -232,7 +232,7 @@ export function PermissionManager() {
                   placeholder="view"
                 />
               </div>
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 shrink-0">
                 <label className="text-sm font-medium">Description</label>
                 <Input
                   value={form.description}
@@ -241,7 +241,7 @@ export function PermissionManager() {
               </div>
             </div>
           )}
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t shrink-0">
             <Button variant="outline" onClick={closeForm}>
               Cancel
             </Button>
