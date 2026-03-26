@@ -14,16 +14,16 @@ import { fetchMessages, removeMessage, selectContact, selectContactLoading } fro
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useRouter } from "next/navigation"
 
 export default function ContactUsPage() {
+  const router = useRouter()
   const [q, setQ] = useState("")
   const [sortKey, setSortKey] = useState<"id" | "message" | "contact" | "createdAt">("createdAt")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selected, setSelected] = useState<number[]>([])
-  const [viewingMessage, setViewingMessage] = useState<any | null>(null)
   const dispatch = useAppDispatch()
   const messages = useAppSelector(selectContact)
   const loading = useAppSelector(selectContactLoading)
@@ -151,7 +151,7 @@ export default function ContactUsPage() {
                 <TableCell>{m.contact}</TableCell>
                 <TableCell>{new Date(m.createdAt).toLocaleString()}</TableCell>
                 <TableCell className="space-x-1">
-                  <Button variant="outline" size="sm" title="View" onClick={() => setViewingMessage(m)}>
+                  <Button variant="outline" size="sm" title="View" onClick={() => router.push(`/admin/contact-us/${m.id}`)}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                   </Button>
                   <Button 
@@ -191,41 +191,6 @@ export default function ContactUsPage() {
           />
         )}
 
-        {/* Message View Dialog */}
-        <Dialog open={!!viewingMessage} onOpenChange={(open) => !open && setViewingMessage(null)}>
-          <DialogContent 
-            className="max-w-2xl max-h-[90vh] overflow-y-auto"
-            onClose={() => setViewingMessage(null)}
-          >
-            <DialogHeader>
-              <DialogTitle>Contact Message</DialogTitle>
-            </DialogHeader>
-            {viewingMessage && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Message ID</label>
-                    <p className="text-sm font-semibold">{viewingMessage.id}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Contact</label>
-                    <p className="text-sm">{viewingMessage.contact}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-sm font-medium text-muted-foreground">Date</label>
-                    <p className="text-sm">{new Date(viewingMessage.createdAt).toLocaleString()}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Message</label>
-                  <div className="rounded-md border bg-muted/50 p-4 whitespace-pre-wrap text-sm">
-                    {viewingMessage.message}
-                  </div>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   )

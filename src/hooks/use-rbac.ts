@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { getCurrentUser } from "@/lib/auth"
 import { isRouteAllowed, resolveEffectivePermissions, hasPermission as checkPermission } from "@/lib/rbac"
@@ -11,6 +11,8 @@ import {
   resetRbacSnapshot,
   selectRbacAssignments,
   selectRbacLoading,
+  selectRbacError,
+  selectRbacLastFetchedAt,
   selectRbacModules,
   selectRbacPermissions,
   selectRbacRoles,
@@ -66,6 +68,8 @@ export function useRBAC(options: UseRbacOptions = {}): UseRbacResult {
   const permissionsCatalog = useAppSelector(selectRbacPermissions)
   const assignments = useAppSelector(selectRbacAssignments)
   const loading = useAppSelector(selectRbacLoading)
+  const lastFetchedAt = useAppSelector(selectRbacLastFetchedAt)
+  const error = useAppSelector(selectRbacError)
   const [subjectId, setSubjectId] = useState<string | null>(options.subjectId ?? null)
   const subjectType = options.subjectType ?? "user"
   const [fallbackRoleId, setFallbackRoleId] = useState<string | null>(null)
@@ -84,10 +88,10 @@ export function useRBAC(options: UseRbacOptions = {}): UseRbacResult {
   }, [subjectId])
 
   useEffect(() => {
-    if (!modules.length && !roles.length && !permissionsCatalog.length && !loading) {
+    if (!lastFetchedAt && !loading && !error) {
       dispatch(fetchRbacSnapshot())
     }
-  }, [dispatch, loading, modules.length, permissionsCatalog.length, roles.length])
+  }, [dispatch, loading, lastFetchedAt, error])
 
   const assignment = useMemo(() => {
     if (!subjectId) return null

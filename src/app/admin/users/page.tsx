@@ -19,9 +19,10 @@ import { selectAdminsPagination, selectAdminsLinks } from "@/features/admin/admi
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useRouter } from "next/navigation"
 
 export default function UsersPage() {
+  const router = useRouter()
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("all")
   const [role, setRole] = useState("all")
@@ -36,9 +37,6 @@ export default function UsersPage() {
   const pagination = useAppSelector(selectAdminsPagination)
   const links = useAppSelector(selectAdminsLinks)
   const confirm = useConfirm()
-  const [editing, setEditing] = useState<any | null>(null)
-  const [creating, setCreating] = useState<any | null>(null)
-  const [viewing, setViewing] = useState<any | null>(null)
   // Debounce search query to prevent excessive API calls
   const debouncedQ = useDebounce(q, 500)
 
@@ -86,7 +84,7 @@ export default function UsersPage() {
             const cols = ["id", "name", "email", "role", "status"]
             exportCsv("admins.csv", rows, cols)
           }}>Export</Button>
-          <Button onClick={() => setCreating({ name: "", email: "", role: "Admin", status: "Active" })}>New</Button>
+          <Button onClick={() => router.push("/admin/users/new")}>New</Button>
         </div>
       </div>
 
@@ -227,10 +225,7 @@ export default function UsersPage() {
                       </button>
                     </TableCell>
                     <TableCell className="space-x-1">
-                      <Button variant="outline" size="sm" title="View" onClick={() => setViewing(u)}>
-                        <Eye size={14} />
-                      </Button>
-                      <Button variant="outline" size="sm" title="Edit" onClick={() => setEditing(u)}>
+                      <Button variant="outline" size="sm" title="Edit" onClick={() => router.push(`/admin/users/${u.id}`)}>
                         <Pencil size={14} />
                       </Button>
                       <Button
@@ -271,70 +266,6 @@ export default function UsersPage() {
           />
         )}
 
-        {editing && (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setEditing(null)}>
-            <div className="w-full max-w-md rounded-lg border bg-background p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-3 text-sm font-semibold">Edit Admin</div>
-              <div className="grid gap-3">
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Name</label>
-                  <TextInput value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
-                </div>
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Email</label>
-                  <TextInput type="email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
-                </div>
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Role</label>
-                  <Select value={editing.role} onChange={(e) => setEditing({ ...editing, role: e.target.value })}>
-                    <option value="Admin">Admin</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Viewer">Viewer</option>
-                  </Select>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
-                <Button onClick={() => { dispatch(updateAdmin(editing)); setEditing(null) }}>Save</Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {creating && (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setCreating(null)}>
-            <div className="w-full max-w-md rounded-lg border bg-background p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-3 text-sm font-semibold">Create Admin</div>
-              <div className="grid gap-3">
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Name</label>
-                  <TextInput value={creating.name} onChange={(e) => setCreating({ ...creating, name: e.target.value })} />
-                </div>
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Email</label>
-                  <TextInput type="email" value={creating.email} onChange={(e) => setCreating({ ...creating, email: e.target.value })} />
-                </div>
-                {/* password */}
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Password</label>
-                  <TextInput type="password" value={creating.password} onChange={(e) => setCreating({ ...creating, password: e.target.value })} />
-                </div>
-                <div className="grid gap-1.5">
-                  <label className="text-sm">Role</label>
-                  <Select value={creating.role} onChange={(e) => setCreating({ ...creating, role: e.target.value })}>
-                    <option value="Admin">Admin</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Viewer">Viewer</option>
-                  </Select>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setCreating(null)}>Cancel</Button>
-                <Button onClick={() => { dispatch(addAdmin(creating)); setCreating(null) }}>Create</Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

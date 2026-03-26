@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { createAsyncThunk, createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import {
   deleteAssignmentApi,
@@ -202,6 +202,7 @@ export const selectRbacPermissions = (state: RootState) => selectSelf(state).per
 export const selectRbacAssignments = (state: RootState) => selectSelf(state).assignments
 export const selectRbacLoading = (state: RootState) => selectSelf(state).loading
 export const selectRbacError = (state: RootState) => selectSelf(state).error
+export const selectRbacLastFetchedAt = (state: RootState) => selectSelf(state).lastFetchedAt
 
 export const makeSelectRoleById = () =>
   createSelector(

@@ -3,27 +3,19 @@ import { useMemo, useState, useEffect } from "react"
 import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PermissionGate } from "@/components/rbac/PermissionGate"
+import { useRouter } from "next/navigation"
 import { useRBAC } from "@/hooks/use-rbac"
 import type { Permission, Role } from "@/features/rbac/rbacTypes"
+import { useConfirm } from "@/components/ConfirmDialog"
 import { toast } from "sonner"
 import { Pencil, Trash2 } from "lucide-react"
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 
-type RoleFormState = {
-  id?: string
-  name: string
-  description: string
-  permissions: string[]
-  grantAll: boolean
-  isSystem?: boolean
-}
-
 export function RoleManager() {
+  const router = useRouter()
   const {
     rolesCatalog,
     permissionsCatalog,
@@ -37,111 +29,29 @@ export function RoleManager() {
   const canManage = hasPermission("rbac:manage")
   const roles = useMemo(() => [...rolesCatalog].sort((a, b) => a.name.localeCompare(b.name)), [rolesCatalog])
   const permissionsById = useMemo(
-    () => new Map(permissionsCatalog.map((permission) => [permission.id, permission] as [string, Permission])),
+    () => new Map(permissionsCatalog.map((permission) => [permission.id?.toString() ?? "", permission] as [string, Permission])),
     [permissionsCatalog],
   )
-
-  const [form, setForm] = useState<RoleFormState | null>(null)
-  const [saving, setSaving] = useState(false)
 
   const [isMounted, setIsMounted] = useState(false)
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  const openForm = (role?: Role) => {
-    if (!canManage) return
-    if (role) {
-      const grantAll = role.permissions.includes("*")
-      setForm({
-        id: role.id?.toString() ?? "",
-        name: role.name,
-        description: role.description ?? "",
-        permissions: grantAll ? permissionsCatalog.map((permission) => permission.id) : [...role.permissions],
-        grantAll,
-        isSystem: role.isSystem,
-      })
-      return
-    }
-    setForm({
-      name: "",
-      description: "",
-      permissions: [],
-      grantAll: false,
-    })
-  }
-
-  const closeForm = () => setForm(null)
-
-  const togglePermission = (permissionId: string) => {
-    setForm((previous) => {
-      if (!previous) return previous
-      const exists = previous.permissions.includes(permissionId)
-      if (previous.grantAll) {
-        const without = permissionsCatalog
-          .map((permission) => permission.id)
-          .filter((id) => id !== permissionId)
-        return {
-          ...previous,
-          permissions: exists ? without : [...without, permissionId],
-          grantAll: false,
-        }
-      }
-      return {
-        ...previous,
-        permissions: exists
-          ? previous.permissions.filter((id) => id !== permissionId)
-          : [...previous.permissions, permissionId],
-      }
-    })
-  }
-
-  const handleGrantAllToggle = (checked: boolean) => {
-    setForm((previous) => {
-      if (!previous) return previous
-      return {
-        ...previous,
-        grantAll: checked,
-        permissions: checked ? permissionsCatalog.map((permission) => permission.id) : [],
-      }
-    })
-  }
-
-  const handleSubmit = async () => {
-    if (!form) return
-    if (!form.name.trim()) {
-      toast.error("Role name is required")
-      return
-    }
-    if (!form.grantAll && form.permissions.length === 0) {
-      toast.error("Select at least one permission or grant all")
-      return
-    }
-    try {
-      setSaving(true)
-      await saveRole({
-        id: form.id,
-        name: form.name.trim(),
-        description: form.description.trim(),
-        permissions: form.grantAll ? ["*"] : form.permissions,
-        isSystem: form.isSystem,
-      })
-      toast.success(form.id ? "Role updated" : "Role created")
-      closeForm()
-    } catch (error: any) {
-      toast.error(error?.message ?? "Unable to save role")
-    } finally {
-      setSaving(false)
-    }
-  }
+  const confirm = useConfirm()
 
   const handleDelete = async (role: Role) => {
     if (!canManage) return
     if (role.isSystem) return
-    const confirmed = window.confirm(`Delete role "${role.name}"?`)
+    const confirmed = await confirm({
+      title: "Delete Role",
+      description: `Are you sure you want to delete the role "${role.name}"? All related user assignments will be invalidated.`,
+      confirmText: "Delete",
+      variant: "destructive"
+    })
     if (!confirmed) return
     try {
-      await removeRole(role.id)
+      await removeRole(role.id.toString())
       toast.success("Role deleted")
     } catch (error: any) {
       toast.error(error?.message ?? "Unable to delete role")
@@ -188,7 +98,7 @@ export function RoleManager() {
               Refresh
             </Button>
             <PermissionGate allow="rbac:manage">
-              <Button onClick={() => openForm()}>New role</Button>
+              <Button onClick={() => router.push("/admin/rbac/roles/new")}>New role</Button>
             </PermissionGate>
           </div>
         }
@@ -220,7 +130,7 @@ export function RoleManager() {
                   <div className="flex flex-wrap gap-1">
                     {role.permissions.includes("*")
                       ? renderPermissionBadge("*")
-                      : role.permissions.map(renderPermissionBadge)}
+                      : role.permissions.map((p: any) => renderPermissionBadge(p.toString()))}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -234,7 +144,7 @@ export function RoleManager() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openForm(role)}
+                        onClick={() => router.push(`/admin/rbac/roles/${role.id}`)}
                         title="Edit role"
                         aria-label={`Edit ${role.name}`}
                       >
@@ -268,71 +178,6 @@ export function RoleManager() {
           </Table>
         )}
       </TableCard>
-
-      <Dialog open={!!form} onOpenChange={(open) => !open && closeForm()}>
-        <DialogContent className="sm:max-w-2xl sm:h-[650px] flex flex-col overflow-hidden">
-          <DialogHeader className="shrink-0">
-            <DialogTitle>{form?.id ? "Edit role" : "Create role"}</DialogTitle>
-          </DialogHeader>
-          {form && (
-            <div className="flex flex-col gap-4 py-4 flex-1 overflow-y-auto pr-1">
-              <div className="grid gap-1.5 shrink-0">
-                <label className="text-sm font-medium">Name</label>
-                <Input
-                  value={form.name}
-                  onChange={(event) => setForm((prev) => prev && { ...prev, name: event.target.value })}
-                  disabled={form.isSystem}
-                />
-              </div>
-              <div className="grid gap-1.5 shrink-0">
-                <label className="text-sm font-medium">Description</label>
-                <Input
-                  value={form.description}
-                  onChange={(event) => setForm((prev) => prev && { ...prev, description: event.target.value })}
-                />
-              </div>
-              <div className="rounded-md border p-3 flex flex-col min-h-0 flex-1">
-                <label className="flex items-center gap-2 text-sm font-medium shrink-0">
-                  <Checkbox
-                    checked={form.grantAll}
-                    onChange={(event) => handleGrantAllToggle(event.currentTarget.checked)}
-                  />
-                  Grant all permissions
-                </label>
-                {!form.grantAll && (
-                  <div className="mt-3 grid gap-2 overflow-y-auto pr-2 text-sm flex-1">
-                    {permissionsCatalog.map((permission) => {
-                      const checked = form.permissions.includes(permission.id)
-                      return (
-                        <label key={permission.id} className="flex items-start gap-2">
-                          <Checkbox
-                            checked={checked}
-                            onChange={() => togglePermission(permission.id)}
-                          />
-                          <span>
-                            <span className="font-medium">{permission.name}</span>
-                            {permission.description && (
-                              <span className="block text-xs text-muted-foreground">{permission.description}</span>
-                            )}
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="flex justify-end gap-2 mt-4 pt-4 border-t shrink-0">
-            <Button variant="outline" onClick={closeForm}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

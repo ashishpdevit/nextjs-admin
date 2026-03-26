@@ -10,9 +10,10 @@ import { exportCsv } from "@/lib/utils"
 import { Plus } from "lucide-react"
 import type { Faq, Lang } from "@/components/modules/faqs/types"
 import { Suspense } from "react"
-import { LazyFaqsTable, LazyCreateFaqDialog, LazyEditFaqDialog } from "@/components/LazyLoading"
+import { LazyFaqsTable } from "@/components/LazyLoading"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { createFaq, fetchFaqs, removeFaq, selectFaqs, selectFaqsLoading, updateFaq, selectFaqsPagination, selectFaqsLinks } from "@/store/faqs"
+import { useRouter } from "next/navigation"
+import { fetchFaqs, removeFaq, selectFaqs, selectFaqsLoading, selectFaqsPagination, selectFaqsLinks } from "@/store/faqs"
 import { useConfirm } from "@/components/ConfirmDialog"
 import { Toaster, toast } from 'sonner';
 import { useDebounce } from "@/hooks/use-debounce"
@@ -22,6 +23,7 @@ import { Pagination } from "@/components/ui/pagination"
 const STORAGE_KEY = "faqs:data"
 
 export default function FaqsPage() {
+  const router = useRouter()
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("all")
   const [type, setType] = useState("all")
@@ -35,9 +37,6 @@ export default function FaqsPage() {
   const pagination = useAppSelector(selectFaqsPagination)
   const links = useAppSelector(selectFaqsLinks)
   const confirm = useConfirm()
-  const [showCreate, setShowCreate] = useState(false)
-  const [showEdit, setShowEdit] = useState(false)
-  const [current, setCurrent] = useState<Faq | null>(null)
 
   const languages: Lang[] = (langs as Lang[]) || []
   
@@ -77,7 +76,7 @@ export default function FaqsPage() {
             const cols = ["id", "status"]
             exportCsv("faqs.csv", rows, cols)
           }}>Export</Button>
-          <Button onClick={() => setShowCreate(true)}><Plus size={16} className="mr-1" /> New</Button>
+          <Button onClick={() => router.push("/admin/faqs/new")}><Plus size={16} className="mr-1" /> New</Button>
         </div>
       </div>
 
@@ -134,8 +133,7 @@ export default function FaqsPage() {
               pageSize={pageSize}
               onPageSizeChange={(n) => setPageSize(n)}
               onEdit={(faq) => {
-                setCurrent(faq)
-                setShowEdit(true)
+                router.push(`/admin/faqs/${faq.id}`)
               }}
               onDelete={async (id) => {
                 const ok = await confirm({ title: "Delete FAQ", description: "Are you sure you want to delete this FAQ?", confirmText: "Delete", variant: "destructive" })
@@ -149,25 +147,6 @@ export default function FaqsPage() {
             />
           </Suspense>
         )}
-
-        <Suspense fallback={null}>
-          <LazyCreateFaqDialog
-            languages={languages}
-            open={showCreate}
-            onOpenChange={setShowCreate}
-            onSave={(payload) => { dispatch(createFaq(payload)); setShowCreate(false) }}
-          />
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <LazyEditFaqDialog
-            languages={languages}
-            open={showEdit}
-            onOpenChange={setShowEdit}
-            faq={current}
-            onSave={(updated) => { dispatch(updateFaq(updated)); setShowEdit(false); setCurrent(null) }}
-          />
-        </Suspense>
       </div>
     </div>
   )

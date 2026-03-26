@@ -1,4 +1,4 @@
-﻿export {
+export {
   fetchRbacSnapshot,
   upsertModule,
   deleteModule,
@@ -15,6 +15,7 @@
   selectRbacAssignments,
   selectRbacLoading,
   selectRbacError,
+  selectRbacLastFetchedAt,
   makeSelectRoleById,
   makeSelectPermissionsForRole,
   makeSelectAssignmentsForSubject,

@@ -1,29 +1,23 @@
 "use client"
 import { useMemo, useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TableCard } from "@/components/admin/table-card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 import { PermissionGate } from "@/components/rbac/PermissionGate"
 import { useRBAC } from "@/hooks/use-rbac"
+import { useRouter } from "next/navigation"
+import { useConfirm } from "@/components/ConfirmDialog"
 import { toast } from "sonner"
 import { Trash2 } from "lucide-react"
 
-type AssignmentFormState = {
-  email: string
-  roleId: string
-}
-
 export function AssignmentManager() {
+  const router = useRouter()
   const {
     rolesCatalog,
     assignmentsCatalog,
     hasPermission,
-    assignRole,
     unassignRole,
     refresh,
     loading,
@@ -32,40 +26,22 @@ export function AssignmentManager() {
   const canManage = hasPermission("rbac:manage")
   const roles = useMemo(() => [...rolesCatalog].sort((a, b) => a.name.localeCompare(b.name)), [rolesCatalog])
 
-  const [form, setForm] = useState<AssignmentFormState>({ email: "", roleId: roles[0]?.id ?? "" })
-  const [saving, setSaving] = useState(false)
-
   const [isMounted, setIsMounted] = useState(false)
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    if (!canManage) return
-    if (!form.email.trim() || !form.roleId) {
-      toast.error("Email and role are required")
-      return
-    }
-    try {
-      setSaving(true)
-      await assignRole({
-        id: undefined,
-        subjectId: form.email.trim().toLowerCase(),
-        subjectType: "user",
-        roleId: form.roleId,
-      })
-      toast.success("Role assigned")
-      setForm({ email: "", roleId: form.roleId })
-    } catch (error: any) {
-      toast.error(error?.message ?? "Unable to assign role")
-    } finally {
-      setSaving(false)
-    }
-  }
+  const confirm = useConfirm()
 
   const handleUnassign = async (assignmentId: string) => {
     if (!canManage) return
+    const confirmed = await confirm({
+      title: "Revoke Assignment",
+      description: "Are you sure you want to revoke this user's role assignment?",
+      confirmText: "Revoke",
+      variant: "destructive"
+    })
+    if (!confirmed) return
     try {
       await unassignRole(assignmentId)
       toast.success("Assignment removed")
@@ -83,54 +59,17 @@ export function AssignmentManager() {
         </p>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Assign role to user</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-3 md:grid-cols-[2fr,2fr,auto] md:items-end" onSubmit={handleSubmit}>
-            <div className="grid gap-1.5">
-              <label className="text-sm font-medium">User email</label>
-              <Input
-                type="email"
-                placeholder="jane.doe@example.com"
-                value={form.email}
-                onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                disabled={!canManage}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <label className="text-sm font-medium">Role</label>
-              <Select
-                value={form.roleId}
-                onChange={(event) => setForm((prev) => ({ ...prev, roleId: event.target.value }))}
-                disabled={!canManage || !roles.length}
-              >
-                <option value="" disabled>
-                  Select role
-                </option>
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <PermissionGate allow="rbac:manage">
-              <Button type="submit" disabled={saving}>
-                {saving ? "Assigning..." : "Assign"}
-              </Button>
-            </PermissionGate>
-          </form>
-        </CardContent>
-      </Card>
-
       <TableCard
         title="Active assignments"
         right={
-          <Button variant="outline" onClick={refresh} disabled={isMounted ? loading : false}>
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={refresh} disabled={isMounted ? loading : false}>
+              Refresh
+            </Button>
+            <PermissionGate allow="rbac:manage">
+              <Button onClick={() => router.push("/admin/rbac/assignments/new")}>New assignment</Button>
+            </PermissionGate>
+          </div>
         }
       >
         {isMounted && loading ? (
@@ -163,7 +102,7 @@ export function AssignmentManager() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleUnassign(assignment.id)}
+                          onClick={() => handleUnassign(assignment.id.toString())}
                           title="Remove assignment"
                           aria-label={`Remove ${assignment.subjectId}`}
                         >

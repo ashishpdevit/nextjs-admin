@@ -8,6 +8,7 @@ export type AppMenuLink = {
   for: string
   updatedAt: string
   link: string
+  content?: string
 }
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false"

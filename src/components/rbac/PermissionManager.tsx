@@ -6,23 +6,17 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TableLoadingState, TableEmptyState } from "@/components/ui/table-states"
 import { PermissionGate } from "@/components/rbac/PermissionGate"
+import { useRouter } from "next/navigation"
 import { useRBAC } from "@/hooks/use-rbac"
+import { useConfirm } from "@/components/ConfirmDialog"
 import type { Permission } from "@/features/rbac/rbacTypes"
 import { toast } from "sonner"
 import { Pencil, Trash2 } from "lucide-react"
 
-type PermissionFormState = {
-  id?: string
-  name: string
-  description: string
-  resource: string
-  action: string
-}
-
 export function PermissionManager() {
+  const router = useRouter()
   const {
     modulesCatalog,
     permissionsCatalog,
@@ -39,74 +33,24 @@ export function PermissionManager() {
     [modulesCatalog],
   )
 
-  const [form, setForm] = useState<PermissionFormState | null>(null)
-  const [saving, setSaving] = useState(false)
-
   const [isMounted, setIsMounted] = useState(false)
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  const openForm = (permission?: Permission) => {
-    if (!canManage) return
-    if (permission) {
-      setForm({
-        id: permission.id,
-        name: permission.name,
-        description: permission.description ?? "",
-        resource: permission.resource,
-        action: permission.action,
-      })
-      return
-    }
-    setForm({
-      name: "",
-      description: "",
-      resource: modules[0]?.resource ?? "",
-      action: "",
-    })
-  }
-
-  const closeForm = () => setForm(null)
-
-  const handleSubmit = async () => {
-    if (!form) return
-    if (!form.name.trim()) {
-      toast.error("Permission name is required")
-      return
-    }
-    if (!form.resource.trim()) {
-      toast.error("Select a module for this permission")
-      return
-    }
-    if (!form.action.trim()) {
-      toast.error("Permission action is required")
-      return
-    }
-    try {
-      setSaving(true)
-      await savePermission({
-        id: form.id,
-        name: form.name.trim(),
-        description: form.description.trim(),
-        resource: form.resource.trim().toLowerCase(),
-        action: form.action.trim().toLowerCase(),
-      })
-      toast.success(form.id ? "Permission updated" : "Permission created")
-      closeForm()
-    } catch (error: any) {
-      toast.error(error?.message ?? "Unable to save permission")
-    } finally {
-      setSaving(false)
-    }
-  }
+  const confirm = useConfirm()
 
   const handleDelete = async (permission: Permission) => {
     if (!canManage) return
-    const confirmed = window.confirm(`Delete permission "${permission.name}" (${permission.id})?`)
+    const confirmed = await confirm({
+      title: "Delete Permission",
+      description: `Are you sure you want to delete permission "${permission.name}" (${permission.id})?`,
+      confirmText: "Delete",
+      variant: "destructive"
+    })
     if (!confirmed) return
     try {
-      await removePermission(permission.id)
+      await removePermission(permission.id.toString())
       toast.success("Permission deleted")
     } catch (error: any) {
       toast.error(error?.message ?? "Unable to delete permission")
@@ -130,7 +74,7 @@ export function PermissionManager() {
               Refresh
             </Button>
             <PermissionGate allow="rbac:manage">
-              <Button onClick={() => openForm()}>New permission</Button>
+              <Button onClick={() => router.push("/admin/rbac/permissions/new")}>New permission</Button>
             </PermissionGate>
           </div>
         }
@@ -169,7 +113,7 @@ export function PermissionManager() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openForm(permission)}
+                        onClick={() => router.push(`/admin/rbac/permissions/${permission.id}`)}
                         title="Edit permission"
                         aria-label={`Edit ${permission.name}`}
                       >
@@ -195,62 +139,6 @@ export function PermissionManager() {
         </Table>
         )}
       </TableCard>
-
-      <Dialog open={!!form} onOpenChange={(open) => !open && closeForm()}>
-        <DialogContent className="sm:max-w-2xl sm:h-[650px] flex flex-col overflow-hidden">
-          <DialogHeader className="shrink-0">
-            <DialogTitle>{form?.id ? "Edit permission" : "Create permission"}</DialogTitle>
-          </DialogHeader>
-          {form && (
-            <div className="flex flex-col gap-4 py-4 flex-1 overflow-y-auto pr-1">
-              <div className="grid gap-1.5 shrink-0">
-                <label className="text-sm font-medium">Name</label>
-                <Input
-                  value={form.name}
-                  onChange={(event) => setForm((prev) => prev && { ...prev, name: event.target.value })}
-                />
-              </div>
-              <div className="grid gap-1.5 shrink-0">
-                <label className="text-sm font-medium">Module / resource</label>
-                <Select
-                  value={form.resource}
-                  onChange={(event) => setForm((prev) => prev && { ...prev, resource: event.target.value })}
-                >
-                  <option value="" disabled>Select module</option>
-                  {modules.map((module) => (
-                    <option key={module.id} value={module.resource}>
-                      {module.name} ({module.resource})
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="grid gap-1.5 shrink-0">
-                <label className="text-sm font-medium">Action</label>
-                <Input
-                  value={form.action}
-                  onChange={(event) => setForm((prev) => prev && { ...prev, action: event.target.value })}
-                  placeholder="view"
-                />
-              </div>
-              <div className="grid gap-1.5 shrink-0">
-                <label className="text-sm font-medium">Description</label>
-                <Input
-                  value={form.description}
-                  onChange={(event) => setForm((prev) => prev && { ...prev, description: event.target.value })}
-                />
-              </div>
-            </div>
-          )}
-          <div className="flex justify-end gap-2 mt-4 pt-4 border-t shrink-0">
-            <Button variant="outline" onClick={closeForm}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
