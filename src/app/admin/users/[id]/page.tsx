@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { addAdmin, fetchAdmins, selectAdmins, updateAdmin } from "@/store/admin"
 import { toast } from "sonner"
+import { useRBAC } from "@/hooks/use-rbac"
 
 export default function AdminFormPage() {
   const router = useRouter()
@@ -19,7 +20,13 @@ export default function AdminFormPage() {
   const adminId = !isNew ? Number(idStr) : null
 
   const data = useAppSelector(selectAdmins)
-  const [formData, setFormData] = useState<any>({ name: "", email: "", role: "Admin", status: "Active", password: "" })
+  const { rolesCatalog, assignRole } = useRBAC()
+  const roles = useMemo(() =>
+    [...rolesCatalog].sort((a, b) => a.name.localeCompare(b.name)),
+    [rolesCatalog]
+  )
+
+  const [formData, setFormData] = useState<any>({ name: "", email: "", role: "", status: "Active", password: "" })
   const [init, setInit] = useState(false)
 
   useEffect(() => {
@@ -35,10 +42,15 @@ export default function AdminFormPage() {
         setFormData({ ...existing, password: "" })
       }
       setInit(true)
-    } else if (isNew && !init) {
+    } else if (isNew && !init && roles.length > 0) {
+      setFormData((prev: any) => ({ ...prev, role: roles[0].key }))
+      setInit(true)
+    } else if (isNew && !init && rolesCatalog.length === 0) {
+       // Wait for roles to load
+    } else if (!init) {
       setInit(true)
     }
-  }, [data, adminId, isNew, init])
+  }, [data, adminId, isNew, init, roles, rolesCatalog])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,10 +60,34 @@ export default function AdminFormPage() {
         delete payload.password
       }
       if (isNew) {
-        await dispatch(addAdmin(payload)).unwrap()
+        const res = await dispatch(addAdmin(payload)).unwrap()
+        
+        // Sync with RBAC: Create assignment for this email
+        const assignedRole = roles.find((r: any) => r.key === payload.role)
+        if (assignedRole) {
+          await assignRole({
+            subjectId: payload.email.toLowerCase(),
+            subjectType: "user",
+            roleId: assignedRole.id,
+            key: `user:${payload.email.toLowerCase()}:${assignedRole.key}`
+          })
+        }
+        
         toast.success("Admin created successfully")
       } else {
         await dispatch(updateAdmin(payload)).unwrap()
+        
+        // Update RBAC assignment if role or email changed
+        const assignedRole = roles.find((r: any) => r.key === payload.role)
+        if (assignedRole) {
+          await assignRole({
+            subjectId: payload.email.toLowerCase(),
+            subjectType: "user",
+            roleId: assignedRole.id,
+            key: `user:${payload.email.toLowerCase()}:${assignedRole.key}`
+          })
+        }
+
         toast.success("Admin updated successfully")
       }
       router.push("/admin/users")
@@ -94,9 +130,9 @@ export default function AdminFormPage() {
               <div className="grid gap-1.5">
                 <label className="text-sm font-medium">Role</label>
                 <Select required value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
-                  <option value="Admin">Admin</option>
-                  <option value="Editor">Editor</option>
-                  <option value="Viewer">Viewer</option>
+                  {roles.map((r: any) => (
+                    <option key={r.id} value={r.key}>{r.name}</option>
+                  ))}
                 </Select>
               </div>
               <div className="grid gap-1.5">

@@ -37,11 +37,13 @@ export default function AssignmentFormPage() {
     }
     try {
       setSaving(true)
+      const selectedRole = roles.find((r: any) => r.id === Number(form.roleId))
       await assignRole({
         id: undefined,
         subjectId: form.email.trim().toLowerCase(),
         subjectType: "user",
         roleId: form.roleId as any,
+        key: `user:${form.email.trim().toLowerCase()}:${selectedRole?.key || form.roleId}`
       })
       toast.success("Role assigned successfully")
       router.push("/admin/rbac/assignments")
@@ -72,7 +74,7 @@ export default function AssignmentFormPage() {
                 type="email"
                 placeholder="jane.doe@example.com"
                 value={form.email}
-                onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                onChange={(event) => setForm((prev: any) => ({ ...prev, email: event.target.value }))}
                 disabled={!canManage}
               />
             </div>
@@ -80,7 +82,7 @@ export default function AssignmentFormPage() {
               <label className="text-sm font-medium">Role</label>
               <Select
                 value={form.roleId}
-                onChange={(event) => setForm((prev) => ({ ...prev, roleId: event.target.value }))}
+                onChange={(event) => setForm((prev: any) => ({ ...prev, roleId: event.target.value }))}
                 disabled={!canManage || !roles.length}
               >
                 <option value="" disabled>Select role</option>

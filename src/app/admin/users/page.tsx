@@ -115,7 +115,7 @@ export default function UsersPage() {
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </Select>
-            <Select data-below value={role} onChange={(e) => {
+            {/* <Select data-below value={role} onChange={(e) => {
               setRole(e.target.value)
               setPage(1) // Reset to first page when filtering
             }}>
@@ -123,7 +123,7 @@ export default function UsersPage() {
               <option value="Admin">Admin</option>
               <option value="Manager">Manager</option>
               <option value="User">User</option>
-            </Select>
+            </Select> */}
           </FiltersBar>
         </div>
 
