@@ -1,16 +1,37 @@
 "use client"
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit"
 import type { RootState } from "@/store/store"
-import { fetchAdminsApi, type Admin, type AdminsParams, type AdminsResponse } from "./adminApi"
+import { fetchAdminsApi, createAdminApi, updateAdminApi, toggleAdminStatusApi, deleteAdminApi, type Admin, type AdminsParams, type AdminsResponse } from "./adminApi"
 
 export const fetchAdmins = createAsyncThunk("admins/fetch", async (params?: AdminsParams) => {
   const response = await fetchAdminsApi(params)
   return response
 })
 
+export const addAdmin = createAsyncThunk("admins/add", async (data: Partial<Admin> & { password?: string }) => {
+  const response = await createAdminApi(data)
+  return response
+})
+
+export const updateAdmin = createAsyncThunk("admins/update", async (data: Partial<Admin> & { password?: string; id: number }) => {
+  const response = await updateAdminApi(data)
+  return response
+})
+
+export const toggleStatus = createAsyncThunk("admins/toggleStatus", async (id: number) => {
+  const response = await toggleAdminStatusApi(id)
+  return response
+})
+
+export const removeAdmin = createAsyncThunk("admins/remove", async (id: number) => {
+  await deleteAdminApi(id)
+  return id
+})
+
 type AdminsState = {
   items: Admin[]
   loading: boolean
+  actionLoading: boolean
   error?: string
   pagination: {
     current_page: number
@@ -31,6 +52,7 @@ type AdminsState = {
 const initialState: AdminsState = { 
   items: [], 
   loading: false,
+  actionLoading: false,
   pagination: {
     current_page: 1,
     last_page: 1,
@@ -50,23 +72,7 @@ const initialState: AdminsState = {
 const adminsSlice = createSlice({
   name: "admins",
   initialState,
-  reducers: {
-    addAdmin(state, action: PayloadAction<Omit<Admin, "id">>) {
-      const nextId = (state.items.reduce((m, u) => Math.max(m, u.id), 0) || 0) + 1
-      state.items.unshift({ id: nextId, ...action.payload })
-    },
-    updateAdmin(state, action: PayloadAction<Admin>) {
-      const idx = state.items.findIndex((u) => u.id === action.payload.id)
-      if (idx !== -1) state.items[idx] = action.payload
-    },
-    toggleStatus(state, action: PayloadAction<number>) {
-      const admin = state.items.find((u) => u.id === action.payload)
-      if (admin) admin.status = admin.status === "Active" ? "Inactive" : "Active"
-    },
-    removeAdmin(state, action: PayloadAction<number>) {
-      state.items = state.items.filter((u) => u.id !== action.payload)
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchAdmins.pending, (state) => {
@@ -95,10 +101,35 @@ const adminsSlice = createSlice({
         state.loading = false
         state.error = action.error.message || "Failed to load admins"
       })
+      .addCase(addAdmin.fulfilled, (state, action) => {
+        if (action.payload?.data) {
+          state.items.unshift(action.payload.data)
+        }
+      })
+      .addCase(updateAdmin.fulfilled, (state, action) => {
+        if (action.payload?.data) {
+          const updated = action.payload.data
+          const idx = state.items.findIndex(u => u.id === updated.id)
+          if (idx !== -1) {
+            state.items[idx] = updated
+          }
+        }
+      })
+      .addCase(toggleStatus.fulfilled, (state, action) => {
+        if (action.payload?.data) {
+          const updated = action.payload.data
+          const idx = state.items.findIndex(u => u.id === updated.id)
+          if (idx !== -1) {
+            state.items[idx].status = updated.status
+          }
+        }
+      })
+      .addCase(removeAdmin.fulfilled, (state, action) => {
+        state.items = state.items.filter(u => u.id !== action.payload)
+      })
   },
 })
 
-export const { addAdmin, updateAdmin, toggleStatus, removeAdmin } = adminsSlice.actions
 export default adminsSlice.reducer
 
 export const selectAdmins = (s: RootState) => s.admins.items

@@ -36,6 +36,18 @@ export async function fetchAppMenuLinksApi(): Promise<AppMenuLink[]> {
   return res.data.data
 }
 
+export async function createAppMenuLinkApi(payload: Omit<AppMenuLink, "id" | "updatedAt">): Promise<AppMenuLink> {
+  if (USE_MOCK) {
+    const list = readMock()
+    const nextId = (list.reduce((m, i) => Math.max(m, i.id), 0) || 0) + 1
+    const created: AppMenuLink = { ...payload, id: nextId, updatedAt: new Date().toISOString() }
+    writeMock([...list, created])
+    return created
+  }
+  const res = await axios.post<{success: boolean, message: string, data: AppMenuLink}>("/api/admin/menu-links", payload)
+  return res.data.data
+}
+
 export async function updateAppMenuLinkApi(update: AppMenuLink): Promise<AppMenuLink> {
   if (USE_MOCK) {
     const list = readMock().map((it) => (it.id === update.id ? { ...update, updatedAt: new Date().toISOString() } : it))

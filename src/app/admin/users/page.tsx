@@ -217,8 +217,13 @@ export default function UsersPage() {
                     <TableCell>
                       <button
                         className={"inline-flex items-center rounded-md border px-2 py-1 text-xs " + (u.status === "Active" ? "bg-secondary" : "")}
-                        onClick={() => {
-                          dispatch(toggleStatus(u.id))
+                        onClick={async () => {
+                          try {
+                            await dispatch(toggleStatus(u.id)).unwrap()
+                            toast.success("Status toggled")
+                          } catch (err: any) {
+                            toast.error(err.message || "Failed to toggle status")
+                          }
                         }}
                       >
                         {u.status === "Active" ? "Active" : "Inactive"}
@@ -240,8 +245,12 @@ export default function UsersPage() {
                             variant: "destructive"
                           })
                           if (ok) {
-                            dispatch(removeAdmin(u.id))
-                            toast.success("Admin deleted successfully")
+                            try {
+                              await dispatch(removeAdmin(u.id)).unwrap()
+                              toast.success("Admin deleted successfully")
+                            } catch (err: any) {
+                              toast.error(err.message || "Failed to delete admin")
+                            }
                           }
                         }}
                       >

@@ -42,14 +42,22 @@ export default function AdminFormPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isNew) {
-      await dispatch(addAdmin(formData))
-      toast.success("Admin created successfully")
-    } else {
-      await dispatch(updateAdmin(formData))
-      toast.success("Admin updated successfully")
+    try {
+      const payload = { ...formData }
+      if (!payload.password) {
+        delete payload.password
+      }
+      if (isNew) {
+        await dispatch(addAdmin(payload)).unwrap()
+        toast.success("Admin created successfully")
+      } else {
+        await dispatch(updateAdmin(payload)).unwrap()
+        toast.success("Admin updated successfully")
+      }
+      router.push("/admin/users")
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save admin")
     }
-    router.push("/admin/users")
   }
 
   if (!isNew && !init) return <div className="p-4 text-muted-foreground text-sm">Loading record...</div>

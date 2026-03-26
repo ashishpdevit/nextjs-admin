@@ -42,7 +42,7 @@ export default function AppMenuLinksPage() {
   }, [fetchData])
 
   const filtered = useMemo(() => {
-    return data?.filter((l:any) => {
+    return data?.filter((l: any) => {
       const mq = q ? l.name.toLowerCase().includes(q.toLowerCase()) : true
       const mt = type === "all" ? true : l.type === type
       const mf = target === "all" ? true : l.audience === target
@@ -119,82 +119,70 @@ export default function AppMenuLinksPage() {
         {loading ? (
           <TableLoadingState message="Loading menu links..." />
         ) : paged.length === 0 ? (
-          <TableEmptyState 
+          <TableEmptyState
             title="No menu links found"
             message="Try adjusting your search or filter criteria to find what you're looking for."
           />
         ) : (
           <Table className="admin-table">
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <Checkbox
-                  checked={allVisibleSelected}
-                  onChange={(e) => {
-                    const checked = e.currentTarget.checked
-                    if (checked) setSelected(Array.from(new Set([...selected, ...paged.map((s) => s.id)])))
-                    else setSelected(selected.filter((id) => !paged.some((s) => s.id === id)))
-                  }}
-                />
-              </TableHead>
-              {[
-                ["name", "Name"],
-                ["type", "Type"],
-                ["audience", "For"],
-                ["updatedAt", "Last Updated"],
-                ["link", "Link / Content"],
-                ["action", "Action"],
-              ].map(([key, label]) => (
-                <TableHead
-                  key={key}
-                  onClick={() => {
-                    if (key === "link" || key === "action") return
-                    const k = key as typeof sortKey
-                    if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc")
-                    else { setSortKey(k); setSortDir("asc") }
-                  }}
-                  className={key === "link" || key === "action" ? "" : "cursor-pointer select-none"}
-                >
-                  {label} {sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.map((l) => (
-              <TableRow key={l.id}>
-                <TableCell>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
                   <Checkbox
-                    checked={selected.includes(l.id)}
+                    checked={allVisibleSelected}
                     onChange={(e) => {
                       const checked = e.currentTarget.checked
-                      setSelected((prev) => checked ? [...prev, l.id] : prev.filter((id) => id !== l.id))
+                      if (checked) setSelected(Array.from(new Set([...selected, ...paged.map((s) => s.id)])))
+                      else setSelected(selected.filter((id) => !paged.some((s) => s.id === id)))
                     }}
                   />
-                </TableCell>
-                <TableCell>{l.name}</TableCell>
-                <TableCell>{l.type}</TableCell>
-                <TableCell>{l.audience}</TableCell>
-                <TableCell>{new Date(l.updatedAt).toLocaleString()}</TableCell>
-                <TableCell className="space-x-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    title="Copy link"
+                </TableHead>
+                {[
+                  ["name", "Name"],
+                  ["type", "Type"],
+                  ["audience", "For"],
+                  ["updatedAt", "Last Updated"],
+                  ["action", "Action"],
+                ].map(([key, label]) => (
+                  <TableHead
+                    key={key}
                     onClick={() => {
-                      const url = new URL(l.link, location.origin).toString()
-                      navigator.clipboard.writeText(url).then(() => toast.success("Link copied to clipboard"))
+                      if (key === "action") return
+                      const k = key as typeof sortKey
+                      if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc")
+                      else { setSortKey(k); setSortDir("asc") }
                     }}
+                    className={key === "action" ? "" : "cursor-pointer select-none"}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 15L7 17a5 5 0 0 1-7-7l2-2" /><path d="M15 9l2-2a5 5 0 1 1 7 7l-2 2" /><path d="M8 12l8-8" /></svg>
-                  </Button>
-                  <Button variant="outline" size="sm" title="Edit" onClick={() => router.push(`/admin/app-menu-links/${l.id}`)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" /></svg>
-                  </Button>
-                </TableCell>
+                    {label} {sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                  </TableHead>
+                ))}
               </TableRow>
-            ))}
-          </TableBody>
+            </TableHeader>
+            <TableBody>
+              {paged.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selected.includes(l.id)}
+                      onChange={(e) => {
+                        const checked = e.currentTarget.checked
+                        setSelected((prev) => checked ? [...prev, l.id] : prev.filter((id) => id !== l.id))
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>{l?.name}</TableCell>
+                  <TableCell>{l?.type}</TableCell>
+                  <TableCell>{l?.audience}</TableCell>
+                  <TableCell>{new Date(l.updatedAt).toLocaleString()}</TableCell>
+                  <TableCell className="space-x-1 text-right">
+                    <Button variant="outline" size="sm" title="Edit" onClick={() => router.push(`/admin/app-menu-links/${l.id}`)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
           </Table>
         )}
 

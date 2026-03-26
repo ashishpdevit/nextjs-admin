@@ -147,3 +147,41 @@ export async function fetchAdminsApi(params?: AdminsParams): Promise<AdminsRespo
   const res = await axios.get<AdminsResponse>(url)
   return res.data
 }
+
+export async function createAdminApi(data: Partial<Admin> & { password?: string }) {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 200))
+    return { data: { id: Date.now(), ...data } as Admin }
+  }
+  const res = await axios.post("/api/admin/users", data)
+  return res.data
+}
+
+export async function updateAdminApi(data: Partial<Admin> & { password?: string; id: number }) {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 200))
+    return { data: data as Admin }
+  }
+  const { id, ...updateData } = data
+  const res = await axios.put(`/api/admin/users/${id}`, updateData)
+  return res.data
+}
+
+export async function toggleAdminStatusApi(id: number) {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 200))
+    return { data: { id, status: "Toggled" } }
+  }
+  const res = await axios.patch(`/api/admin/users/${id}/toggle-status`)
+  return res.data
+}
+
+export async function deleteAdminApi(id: number) {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 200))
+    return { data: { id } }
+  }
+  const res = await axios.delete(`/api/admin/users/${id}`)
+  return res.data
+}
+
